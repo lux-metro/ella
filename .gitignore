@@ -1,0 +1,54 @@
+# =============================================================
+# .gitignore — proyecto ella
+# =============================================================
+# Este archivo le dice a Git qué archivos NO guardar en el repo.
+# Normalmente son archivos temporales, contraseñas, o cosas
+# que cambian en cada computadora.
+# =============================================================
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# --- Logs del sistema ---
+*.log
+logs/
+
+# --- Archivos de configuración local (contraseñas, IPs) ---
+# Si algún día tenés un archivo con datos sensibles, ponelo acá
+.env
+secrets.yaml
+inventory_local.ini
+
+# --- Sistemas operativos ---
+.DS_Store           # Mac
+Thumbs.db           # Windows
+desktop.ini         # Windows
+
+# --- Editores de texto ---
+*.swp               # Vim
+*.swo               # Vim
+*~                  # Emacs backup
+.vscode/            # VS Code
+.idea/              # PyCharm
+
+# --- Audio (archivos pesados de trabajo, NO los del repo) ---
+# Los archivos de audio del proyecto SÍ van en el repo
+# Solo excluimos archivos de audio temporales o de trabajo personal
+*.wav.bak
+*.aif
+render/
+
+# --- Ansible ---
+*.retry

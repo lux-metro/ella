@@ -1,0 +1,64 @@
+# =============================================================
+# config.yaml — Configuración de la Raspberry Pi - Voz A
+# =============================================================
+#
+# Este archivo define el comportamiento de ESTA Raspberry Pi.
+# Si tenés dos Pi, cada una tiene su propio config.yaml con
+# valores distintos.
+#
+# Editá este archivo antes del deploy. No hace falta tocar el
+# código Python para cambiar estos parámetros.
+#
+# IMPORTANTE: El formato YAML es sensible a los espacios.
+# No uses tabulaciones (Tab). Usá siempre dos espacios para indentar.
+# =============================================================
+
+# --- Identificación del dispositivo ---
+voz: a
+# Nombre de esta voz. Aparece en los logs.
+# Valores posibles: 'a', 'b' (cuando haya segunda Pi)
+
+# --- Audio ---
+dispositivo_audio: "hw:0,0"
+# El dispositivo de audio donde sale el sonido.
+# hw:0,0 = primera tarjeta de audio, primer dispositivo (salida 3.5mm de la Pi 3)
+# Para verificar qué dispositivos tenés, corré: aplay -l
+
+directorio_audio: "/home/pi/ella/audio"
+# Carpeta donde están los archivos de audio.
+# El motor va a reproducir todos los archivos .wav, .flac, .ogg, .mp3 de esta carpeta.
+
+volumen_base: 0.75
+# Volumen de reproducción base, entre 0.0 (silencio) y 1.0 (máximo).
+# El volumen real va a variar según la temperatura que lea el Arduino.
+
+pausa_min_seg: 3
+# Tiempo mínimo de silencio entre clips, en segundos.
+
+pausa_max_seg: 20
+# Tiempo máximo de silencio entre clips, en segundos.
+# La pausa real varía según la humedad de la arcilla.
+
+# --- Comunicación con el Arduino ---
+puerto_serial: "/dev/ttyS0"
+# Puerto UART donde está conectado el Arduino.
+# /dev/ttyS0 = puerto UART nativo de la Raspberry Pi (pines GPIO 14 y 15)
+# /dev/ttyUSB0 = si el Arduino está conectado por USB (para pruebas)
+# Si el Arduino no está conectado, el sistema usa modo simulado automáticamente.
+
+baudrate: 9600
+# Velocidad de comunicación serial.
+# Tiene que coincidir con el valor BAUDRATE en hardware/sensor_hub/config.h
+
+# --- Comportamiento artístico ---
+# Las siguientes reglas definen cómo los sensores afectan el sonido.
+# Están implementadas en audio_engine.py. Lo que podés ajustar acá
+# son los rangos, no la lógica (para cambiar la lógica, editá audio_engine.py).
+
+# Mapeo de sensores a efectos (para referencia):
+#   Humedad de arcilla  →  Tempo (velocidad)
+#                           más húmedo = más lento (rango: 0.6x a 1.2x)
+#   Temperatura         →  Volumen
+#                           más caliente = ligeramente más volumen (±20%)
+#   Luz ambiental       →  Variación de pitch
+#                           más oscuro = pitch estable / más luminoso = más variación

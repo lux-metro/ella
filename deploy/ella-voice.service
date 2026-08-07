@@ -1,0 +1,29 @@
+[Unit]
+Description=ella - Motor de Audio
+After=network.target sound.target
+
+[Service]
+Type=simple
+User={{ user_name }}
+Group={{ user_name }}
+WorkingDirectory={{ install_dir }}
+
+# Entorno virtual y script principal
+ExecStart={{ install_dir }}/.venv/bin/python {{ install_dir }}/pi/shared/main.py
+
+# Reiniciar automáticamente si falla
+Restart=always
+# Esperar 5 segundos antes de reiniciar
+RestartSec=5
+
+# Opciones de logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ella-voice
+
+# Limitar intentos de reinicio para evitar bucles infinitos rápidos
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Install]
+WantedBy=multi-user.target

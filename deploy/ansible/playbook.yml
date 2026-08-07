@@ -1,0 +1,97 @@
+---
+- name: Deploy de instalación "ella"
+  hosts: todas
+  become: yes # Ejecutar tareas como sudo
+  
+  vars:
+    # Ajustá estos valores
+    repo_url: "https://github.com/TU_USUARIO/ella.git"
+    install_dir: "/home/pi/ella"
+    user_name: "pi"
+    
+  tasks:
+    - name: Actualizar sistema operativo
+      apt:
+        update_cache: yes
+        upgrade: yes
+        
+    - name: Instalar dependencias del sistema
+      apt:
+        name:
+          - python3-venv
+          - sox
+          - libsox-fmt-all
+          - git
+          - alsa-utils
+          - curl
+          - watchdog
+        state: present
+        
+    - name: Clonar repositorio del proyecto
+      become: no # Clonar como usuario 'pi', no root
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ install_dir }}"
+        update: yes
+        
+    - name: Crear entorno virtual de Python
+      become: no
+      command: python3 -m venv {{ install_dir }}/.venv
+      args:
+        creates: "{{ install_dir }}/.venv/bin/activate"
+        
+    - name: Instalar dependencias de Python
+      become: no
+      pip:
+        requirements: "{{ install_dir }}/pi/shared/requirements.txt"
+        virtualenv: "{{ install_dir }}/.venv"
+        
+    - name: Configurar Voz A (si el nombre contiene 'voz-a')
+      become: no
+      file:
+        src: "{{ install_dir }}/pi/voice_a/config.yaml"
+        dest: "{{ install_dir }}/pi/shared/config.yaml"
+        state: link
+      when: "'voz-a' in inventory_hostname"
+      
+    - name: Configurar Voz B (si el nombre contiene 'voz-b')
+      become: no
+      file:
+        src: "{{ install_dir }}/pi/voice_b/config.yaml"
+        dest: "{{ install_dir }}/pi/shared/config.yaml"
+        state: link
+      when: "'voz-b' in inventory_hostname"
+      
+    - name: Forzar salida de audio por 3.5mm (raspi-config)
+      command: raspi-config nonint do_audio 1
+      
+    - name: Deshabilitar consola serial pero habilitar puerto UART por hardware
+      command: raspi-config nonint do_serial 2
+      
+    - name: Asegurar que el usuario pi esté en el grupo dialout (para UART)
+      user:
+        name: "{{ user_name }}"
+        groups: dialout
+        append: yes
+        
+    - name: Instalar y habilitar servicio systemd
+      template:
+        src: "{{ install_dir }}/deploy/ella-voice.service"
+        dest: /etc/systemd/system/ella-voice.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - recargar systemd
+        - reiniciar servicio ella-voice
+        
+  handlers:
+    - name: recargar systemd
+      systemd:
+        daemon_reload: yes
+        
+    - name: reiniciar servicio ella-voice
+      systemd:
+        name: ella-voice
+        state: restarted
+        enabled: yes
