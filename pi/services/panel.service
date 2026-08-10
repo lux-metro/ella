@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/ruidosa/pi/panel
+WorkingDirectory=%h/ella/pi/panel
 # Asumimos que se crea un entorno virtual o que Flask está instalado
 ExecStart=/usr/bin/env python3 app.py
 Restart=always

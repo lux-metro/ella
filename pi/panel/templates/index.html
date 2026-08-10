@@ -348,6 +348,20 @@
                         (Recordá reiniciar los servicios para aplicar)
                     </p>
                 </form>
+                <div class="card" style="border-color: var(--error-color);">
+                    <h2 style="color: var(--error-color); border-bottom-color: rgba(239, 68, 68, 0.2);">Zona de Peligro (Red)</h2>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Desactivar el Access Point devolverá el internet a la máquina conectándola a tu red local (útil para actualizaciones). 
+                        <strong>El panel web dejará de estar disponible en 192.168.4.1 y la máquina se reiniciará.</strong>
+                    </p>
+                    <form method="POST" action="/config/revert_wifi">
+                        <div class="form-group">
+                            <label>Para continuar, escribe exactamente "estoy muy seguro":</label>
+                            <input type="text" name="seguridad" pattern="^estoy muy seguro$" title="Debes escribir exactamente 'estoy muy seguro' en minúsculas" required placeholder="estoy muy seguro">
+                        </div>
+                        <button type="submit" class="btn-danger">Continuar</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

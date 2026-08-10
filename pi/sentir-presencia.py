@@ -10,7 +10,7 @@ ARCHIVO_INTENSIDAD = "/tmp/intensidad.txt"
 ARCHIVO_ULTIMO_AVISO = "/tmp/ultimo_aviso.txt"
 
 # Archivo de configuración
-CONFIG_FILE = os.path.expanduser("~/ruidosa/config.env")
+CONFIG_FILE = os.path.expanduser("~/ella/config.env")
 
 # Valores por defecto
 UDP_IP = "0.0.0.0"

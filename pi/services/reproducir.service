@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/ruidosa/prototype/bash
+WorkingDirectory=%h/ella/prototype/bash
 ExecStart=/bin/bash reproducir.sh
 Restart=always
 RestartSec=3

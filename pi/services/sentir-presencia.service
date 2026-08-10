@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=%h/ruidosa/pi
+WorkingDirectory=%h/ella/pi
 ExecStart=/usr/bin/env python3 sentir-presencia.py
 Restart=always
 RestartSec=3

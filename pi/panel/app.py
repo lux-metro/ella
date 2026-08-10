@@ -13,7 +13,7 @@ PANEL_PASS = os.environ.get('PANEL_PASS', 'admin')
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_for_flash_messages'
 
-CONFIG_FILE = os.path.expanduser("~/ruidosa/config.env")
+CONFIG_FILE = os.path.expanduser("~/ella/config.env")
 
 # --- Autenticación ---
 def check_auth(username, password):
@@ -140,6 +140,28 @@ def update_time():
         except Exception as e:
             flash(f"Error al actualizar la hora (¿falta configurar sudoers?): {e}", "error")
     return redirect(url_for('index'))
+
+@app.route('/config/revert_wifi', methods=['POST'])
+@requires_auth
+def revert_wifi():
+    seguridad = request.form.get('seguridad', '')
+    if seguridad.strip() != "estoy muy seguro":
+        flash("Mecanismo de seguridad fallido. Debes escribir exactamente la frase solicitada.", "error")
+        return redirect(url_for('index'))
+    
+    script_path = os.path.expanduser("~/ella/repo/pi/revertir_wifi.sh")
+    if not os.path.exists(script_path):
+        flash("No se encontró el script revertir_wifi.sh.", "error")
+        return redirect(url_for('index'))
+    
+    try:
+        # Ejecutamos el script en background y ordenamos un reboot en 2 segundos
+        subprocess.Popen(f"bash {script_path} && sleep 2 && sudo reboot", shell=True)
+        return "El Access Point se está desactivando y la máquina se reiniciará en unos segundos. Ya puedes cerrar esta ventana."
+    except Exception as e:
+        flash(f"Error ejecutando script: {e}", "error")
+        return redirect(url_for('index'))
+
 
 # --- Bluetooth API (Sin JS) ---
 @app.route('/bluetooth/scan', methods=['POST'])

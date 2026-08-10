@@ -59,6 +59,23 @@ curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provisio
 
 ---
 
+## 🛜 Conectividad y Red (Importante)
+
+Una vez ejecutado el script de instalación (`provision.sh`), la Raspberry Pi **se desconectará del WiFi de tu casa y creará su propia red privada (Access Point)** llamada `InstalacionElla`. 
+A partir de este momento, **la Pi ya no tendrá acceso a Internet**, y servicios como Raspberry Pi Connect dejarán de funcionar.
+
+Para interactuar con la instalación:
+1. Conecta tu celular o computadora a la red WiFi `InstalacionElla`.
+2. Ingresa a `http://192.168.4.1:5000` en tu navegador para ver el **Panel de Control**.
+3. Si necesitas acceder a la consola, puedes hacer SSH apuntando a esa IP (`ssh tu_usuario@192.168.4.1`).
+
+**¿Qué hago si necesito que la Pi vuelva a tener internet (ej: para hacer un update o un git pull)?**
+Tienes dos opciones:
+* **Fácil (Hardware):** Enchufarle un cable Ethernet directo al router. La Pi mantendrá el Access Point por WiFi pero obtendrá internet por el cable.
+* **Software:** Desde el Panel de Control Web, encontrarás abajo de todo una "Zona de Peligro". Allí puedes ordenar que se desactive el Access Point. La máquina se reiniciará y volverá a conectarse automáticamente a tu WiFi de la casa. Luego de actualizar, para volver a aislarla, deberás ejecutar `bash ~/ella/repo/pi/setup_pi_access_point.sh`.
+
+---
+
 ## Arquitectura del sistema
 
 ```

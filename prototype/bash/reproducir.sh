@@ -1,6 +1,6 @@
 #!/bin/bash
-CONFIG_FILE=~/ruidosa/config.env
-CLIPS_DIR=~/ruidosa/clips
+CONFIG_FILE=~/ella/config.env
+CLIPS_DIR=~/ella/audio
 
 # Default values
 VOL_MIN=0.3
