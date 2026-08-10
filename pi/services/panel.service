@@ -1,0 +1,14 @@
+[Unit]
+Description=Panel de Control Web de Instalación Ella
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/ruidosa/pi/panel
+# Asumimos que se crea un entorno virtual o que Flask está instalado
+ExecStart=/usr/bin/env python3 app.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

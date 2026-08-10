@@ -28,7 +28,10 @@ logs/
 # --- Archivos de configuración local (contraseñas, IPs) ---
 # Si algún día tenés un archivo con datos sensibles, ponelo acá
 .env
+*.env
 secrets.yaml
+credenciales_wifi.txt
+/tmp/*.txt
 inventory_local.ini
 
 # --- Sistemas operativos ---

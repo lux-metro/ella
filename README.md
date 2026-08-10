@@ -1,7 +1,12 @@
 # ella
 
-> *Una alfombra de lana, arcilla, hongos y sonido.*  
-> Instalación sonora de arte. Sonido emitido desde adentro de la alfombra usando transductores de vibración (exciters). El crecimiento biológico influye sobre el comportamiento del audio.
+> *Ella 
+
+Instalación textil de Sandra Pauli y Rosario Oliva
+
+Ella propone al textil como un territorio donde memoria, cuerpo e historia se entrelazan. Una antigua alfombra persa es abierta y reparada mediante la sutura con vellón, transformando la herida en un gesto de repetición que alivia. El tejido activa relatos íntimos y memorias heredadas que encuentran eco en los diarios de la abuela de Sandra Pauli, escritos entre 1943 y 1982. La obra convierte el acto de entrelazar en una forma de hacer visible lo oculto y entiende la reparación y el tejido como una práctica de transmisión, resistencia y transformación.*  
+
+> Este código da soporte a una instalación aumentada con sonido emitido desde adentro de la alfombra usando transductores de vibración (exciters). Las condiciones del entorno influyen sobre el comportamiento del audio.
 
 ---
 
@@ -58,19 +63,19 @@ curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provisio
 
 ```
                     ┌─────────────────────────────────┐
-                    │         ALFOMBRA (ella)          │
-                    │  [exciter] ←── amplificador ←── │
+                    │         ALFOMBRA (ella)         │
+                    │  [exciter] <── amplificador <── │
                     └─────────────────────────────────┘
-                                                       ▲
-                                                       │ audio 3.5mm
+                                   ▲
+                                   │ audio 3.5mm
                     ┌───────────────────────────────────┐
-                    │       Raspberry Pi 3 (Voz A)       │
-                    │   audio_engine.py + sox/play        │
+                    │       Raspberry Pi 3 (Voz A)      │
+                    │   audio_engine.py + sox/play      │
                     └──────────────┬────────────────────┘
                                    │ UART serie (cable)
                     ┌──────────────▼────────────────────┐
-                    │           Arduino Uno              │
-                    │  sensor humedad · temp · luz       │
+                    │           Arduino Uno             │
+                    │  sensor humedad · temp · luz      │
                     └───────────────────────────────────┘
 ```
 

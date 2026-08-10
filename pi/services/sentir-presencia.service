@@ -1,0 +1,13 @@
+[Unit]
+Description=Servicio para escuchar avisos del radar ESP32
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/ruidosa/pi
+ExecStart=/usr/bin/env python3 sentir-presencia.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
