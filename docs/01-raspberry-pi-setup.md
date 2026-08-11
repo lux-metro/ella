@@ -121,7 +121,7 @@ curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision
 
 Si preferís clonar el repositorio primero:
 ```bash
-git clone https://github.com/TU_USUARIO/ella.git
+git clone https://github.com/lux-metro/ella.git
 cd ella
 bash deploy/provision.sh
 ```
