@@ -27,7 +27,6 @@ logs/
 secrets.yaml
 credenciales_wifi.txt
 /tmp/*.txt
-inventory_local.ini
 
 # --- Sistemas operativos ---
 .DS_Store           # Mac
@@ -47,6 +46,3 @@ desktop.ini         # Windows
 *.wav.bak
 *.aif
 render/
-
-# --- Ansible ---
-*.retry

@@ -110,21 +110,18 @@ SSH te permite controlar la Pi desde tu computadora, sin necesitar conectarle mo
 
 ## Paso 5 — Instalar el software de ella
 
-Ahora que estás conectado a la Pi, el siguiente paso es correr el script de instalación automática. Seguí los pasos en [deploy/README.md](../deploy/README.md).
+Ahora que estás conectado a la Pi, el siguiente paso es clonar el repositorio y correr el script de instalación automática. Seguí los pasos en [deploy/README.md](../deploy/README.md).
 
-**El camino rápido (si ya subiste el repositorio a GitHub):**
+**Importante:** el script necesita el repositorio completo (contiene los servicios systemd y el código del panel), así que primero hay que clonarlo:
 
 ```bash
 # En la terminal de la Pi, escribí:
-curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
-```
-
-Si preferís clonar el repositorio primero:
-```bash
-git clone https://github.com/lux-metro/ella.git
-cd ella
+git clone https://github.com/lux-metro/ella.git ~/ella/repo
+cd ~/ella/repo
 bash deploy/provision.sh
 ```
+
+> El repositorio es **público**, así que el comando funciona tal cual. Si usás tu propio fork (público o privado), cambiá `lux-metro` por tu usuario; para un repo privado cloná manualmente en `~/ella/repo`.
 
 ---
 

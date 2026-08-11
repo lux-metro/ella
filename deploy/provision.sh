@@ -8,7 +8,9 @@
 # operador, desde el Panel Web o con pi/setup_pi_access_point.sh.
 #
 # Uso:
-#   bash provision.sh
+#   git clone <URL_DEL_REPO> ~/ella/repo   # primero clonar el repo completo
+#   cd ~/ella/repo
+#   bash deploy/provision.sh
 # ==============================================================================
 
 set -e # Detener script si algún comando falla
@@ -23,7 +25,7 @@ fi
 
 PI_USER=$(whoami)
 BASE_DIR="$HOME/ella"
-REPO_URL="https://github.com/TU_USUARIO/ella.git"
+REPO_URL="https://github.com/lux-metro/ella.git"
 
 # ------------------------------------------------------------------------------
 # 1. Actualización de sistema y dependencias
@@ -56,8 +58,8 @@ fi
 
 if [ ! -d "$BASE_DIR/repo" ]; then
     echo "Clonando repositorio en $BASE_DIR/repo..."
-    # Asumimos que si estamos corriendo este script, ya estamos dentro del repo.
-    # Pero si lo bajaron con curl, lo clonamos.
+    # Normalmente el usuario ya clonó el repo en ~/ella/repo (ver deploy/README.md).
+    # Si no, lo clonamos.
     if [ -d "$(dirname "$0")/../.git" ]; then
         # El script se está corriendo desde el repo clonado
         REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -139,7 +141,7 @@ SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 mkdir -p "$SYSTEMD_USER_DIR"
 
 # Copiar los servicios reemplazando el path canónico %h/ella/repo por la
-# ubicación real del repositorio (soporta el flujo curl y el clon manual).
+# ubicación real del repositorio (soporta el clon en ~/ella/repo o en otra ruta).
 for svc in panel reproducir sentir-presencia; do
     sed -e "s|%h/ella/repo|$REPO_DIR|g" "$REPO_DIR/pi/services/$svc.service" > "$SYSTEMD_USER_DIR/$svc.service"
 done

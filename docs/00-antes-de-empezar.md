@@ -42,7 +42,6 @@ Un módulo con un radar de microondas que detecta movimiento (a diferencia de lo
 | **Access Point** | Modo en el que la Raspberry Pi crea su propia red WiFi (en este proyecto se llama `InstalacionElla`). Se usa para aislar la máquina en la sala de exposición y entrar al panel desde `192.168.4.1:5000`. Se activa a pedido (panel web o CLI), no automáticamente. |
 | **NetworkManager** | El programa de Linux que gestiona las redes (WiFi, ethernet). En este proyecto se usa su herramienta `nmcli` para activar/desactivar el Access Point. |
 | **systemd** | El programa de Linux que arranca otros programas cuando enciende el sistema. Úsalo para que el audio arranque solo. |
-| **Ansible** | Herramienta que corre en tu computadora y configura la Raspberry Pi automáticamente por SSH. |
 | **firmware** | El programa que corre en el Arduino. A diferencia de un archivo común, se "graba" directamente en el chip. |
 | **pin** | Los conectores metálicos en los bordes del Arduino y la Raspberry Pi. Cada uno tiene un nombre o número. |
 | **ALSA** | El sistema de audio de Linux. Lo usamos para enrutar el audio al parlante Bluetooth. |
@@ -80,7 +79,7 @@ Un módulo con un radar de microondas que detecta movimiento (a diferencia de lo
 
 ## 4. Lista de herramientas y materiales
 
-- Computadora con Linux (para correr Ansible y conectarte por SSH)
+- Computadora con Linux (para conectarte por SSH)
 - Cable de red ethernet (recomendado para el primer setup de la Pi)
 - Multímetro (para verificar conexiones, opcional pero útil)
 - Cinta aisladora o termocontraíble

@@ -48,14 +48,18 @@ ella/
 
 ## Setup rápido (si ya sabés lo que hacés)
 
+> ⚠️ **Primero cloná el repositorio completo.** El script usa archivos del repo (servicios systemd, panel web), así que NO funciona correrlo solo con `curl | bash`.
+
 ```bash
 # En la Raspberry Pi, después del primer arranque:
-curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
+git clone https://github.com/lux-metro/ella.git ~/ella/repo
+cd ~/ella/repo
+bash deploy/provision.sh
 
 # Eso es todo. La Pi queda autónoma y arranca sola.
 ```
 
-> ⚠️ Reemplazá `TU_USUARIO` con tu usuario de GitHub antes de usar este comando.
+> Si usás tu propio fork del repo (público o privado), cambiá `lux-metro` por tu usuario de GitHub.
 
 ---
 
@@ -109,7 +113,7 @@ Tienes dos opciones:
 - [x] Prototipo bash (sox/play + Bluetooth) — `prototype/bash/`
 - [x] Motor de audio Python + configuración por dispositivo — `pi/shared/` (corre como servicio `reproducir.service`)
 - [x] Comunicación Arduino → Raspberry Pi por UART — `serial_reader.py` + firmware `hardware/sensor_hub/`
-- [x] Deploy automatizado — `deploy/provision.sh` (y Ansible como flujo alternativo)
+- [x] Deploy automatizado — `deploy/provision.sh`
 - [x] Panel de control web + Access Point bajo demanda — `pi/panel/`
 - [ ] Pruebas de larga duración (72 hs continuas)
 

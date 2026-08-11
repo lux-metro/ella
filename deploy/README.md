@@ -4,31 +4,26 @@
 
 ---
 
-## Opciones de instalación
+## Provisioning Script (`provision.sh`)
 
-Tenés dos formas de instalar *ella*. Elegí la que te parezca más cómoda.
-
-### Opción 1: Provisioning Script (`provision.sh`) — Recomendado para empezar
 Es un solo comando que corrés **adentro** de la Raspberry Pi. Hace todo por vos: instala dependencias, configura el audio, habilita puertos y deja el servicio corriendo.
 
 *Ideal para cuando tenés una sola Pi o es la primera vez que armás la instalación.*
 
-### Opción 2: Ansible (`ansible/`) — Más avanzado
-Es un sistema que corrés en **tu computadora**, y que se conecta a la(s) Pi por red para configurarlas sin que tengas que tocarlas.
-
-*Ideal para cuando tenés la Pi funcionando y querés actualizar el código con un solo comando.*
-
----
-
-## Cómo usar el Provisioning Script (Opción 1)
+## Cómo usar el Provisioning Script
 
 1. Grabá la SD card, conectá la Pi a internet y entrá por SSH (ver `docs/01-raspberry-pi-setup.md`).
-2. Una vez adentro de la Pi, corré este comando:
+2. **Cloná el repositorio completo** (el script necesita los servicios y el código del repo, no funciona descargado solo):
+3. Corré el script desde adentro del repositorio:
 
 ```bash
-# Instalación de la Raspberry Pi:
-curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
+# En la terminal de la Pi:
+git clone https://github.com/lux-metro/ella.git ~/ella/repo
+cd ~/ella/repo
+bash deploy/provision.sh
 ```
+
+> **IMPORTANTE:** El repo oficial es **público** y el comando funciona tal cual. Si usás tu propio fork (público o privado), cambiá `lux-metro` por tu usuario de GitHub; para un repo privado cloná manualmente en `~/ella/repo`. No existe un "script suelto" que funcione sin el repo.
 
 **¿Qué hace el script exactamente?**
 - Actualiza el sistema operativo (`apt update`).
