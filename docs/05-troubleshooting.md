@@ -29,24 +29,37 @@ systemctl --user status reproducir
 **Síntoma:** El servicio está corriendo pero no se escucha nada
 
 ```bash
-# Verificar que el volumen no esté en 0:
-amixer get PCM
+# 1. Verificar que el parlante Bluetooth esté conectado
+bluetoothctl info <MAC>
+# Tiene que decir "Connected: yes". Si no, probá conectar:
+bluetoothctl connect <MAC>
 
-# Subir el volumen:
-amixer set PCM 85%
+# 2. Verificar que PulseAudio esté corriendo:
+pactl info
 
-# Probar audio manualmente:
+# 3. Verificar que el volumen del sink no esté en 0:
+pactl list short sinks
+pactl get-sink-volume <nombre_o_index>
+
+# Subir el volumen del sink (ej: 85%):
+pactl set-sink-volume <nombre_o_index> 85%
+
+# 4. Probar audio manualmente:
 play -n synth 3 sine 440
-
-# Ver qué dispositivo de audio está usando sox:
-play -n synth 1 sine 440 -V
 ```
 
-**Verificar que el dispositivo correcto esté configurado:**
-```bash
-cat ~/.asoundrc
-# Debería mostrar hw:0,0 para salida 3.5mm
-```
+> El motor de audio intenta reconectar el parlante automáticamente antes de reproducir, **solo si** `mac_parlante_bluetooth` está definida en `pi/config.yaml`. Verificá que esté cargada.
+
+---
+
+## El parlante Bluetooth no se conecta solo
+
+**Síntoma:** Tras un reinicio de la Pi, el audio no sale (el parlante quedó desconectado).
+
+1. Verificá que el parlante esté encendido y cargado.
+2. Desde el Panel Web → **"Bluetooth (Parlantes)"** → *Escanear* y *Conectar* para re-emparejarlo.
+3. Completá `mac_parlante_bluetooth` en `pi/config.yaml` (la MAC aparece en la card Bluetooth al escanear).
+4. Reiniciá el servicio: `systemctl --user restart reproducir`
 
 ---
 

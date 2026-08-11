@@ -6,15 +6,13 @@
 // y mandar los valores a la Raspberry Pi por comunicación serial.
 //
 // Sensores que lee:
-//   - Humedad del suelo / arcilla (pin A0)
 //   - Temperatura ambiente (pin A1, sensor LM35)
 //   - Luz ambiental (pin A2, fotoresistor LDR)
 //
 // Formato de salida (una línea por lectura, en formato JSON):
-//   {"humidity":512,"temperature":225,"light":300,"ok":true}
+//   {"temperature":225,"light":300,"ok":true}
 //
 // Donde:
-//   humidity    → valor crudo 0-1023 (mayor = más húmedo)
 //   temperature → temperatura en décimas de °C (225 = 22.5°C)
 //   light       → valor crudo 0-1023 (mayor = más luminoso)
 //   ok          → siempre true si el Arduino está funcionando
@@ -58,29 +56,15 @@ void loop() {
     ultimaLectura = ahora;
 
     // Leer los sensores
-    int valorHumedad    = leerHumedad();
     int valorTemperatura = leerTemperatura();
     int valorLuz        = leerLuz();
 
     // Mandar los datos en formato JSON por el puerto serial
-    enviarDatos(valorHumedad, valorTemperatura, valorLuz);
+    enviarDatos(valorTemperatura, valorLuz);
   }
 
   // Acá podría haber otro código que corra entre lecturas,
   // sin bloquear el loop principal.
-}
-
-// =============================================================
-// leerHumedad() — Lee el sensor de humedad del suelo
-// =============================================================
-// Retorna un valor entre 0 y 1023.
-// IMPORTANTE: Los sensores resistivos de suelo típicos tienen
-// la escala invertida: 0 = muy húmedo, 1023 = muy seco.
-// Lo invertimos acá para que sea más intuitivo.
-int leerHumedad() {
-  int valorCrudo = analogRead(PIN_HUMEDAD);
-  // Invertir: 1023 - valor_crudo → 0 = seco, 1023 = húmedo
-  return 1023 - valorCrudo;
 }
 
 // =============================================================
@@ -112,13 +96,11 @@ int leerLuz() {
 // =============================================================
 // enviarDatos() — Serializa los datos en JSON y los envía
 // =============================================================
-void enviarDatos(int humedad, int temperatura, int luz) {
+void enviarDatos(int temperatura, int luz) {
   // Construir el string JSON manualmente (sin librería externa)
-  // Formato: {"humidity":512,"temperature":225,"light":300,"ok":true}
+  // Formato: {"temperature":225,"light":300,"ok":true}
   Serial.print("{");
-  Serial.print("\"humidity\":");
-  Serial.print(humedad);
-  Serial.print(",\"temperature\":");
+  Serial.print("\"temperature\":");
   Serial.print(temperatura);
   Serial.print(",\"light\":");
   Serial.print(luz);

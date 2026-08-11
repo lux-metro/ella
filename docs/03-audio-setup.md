@@ -1,110 +1,100 @@
-# Audio — Configuración de salida
+# Audio — Configuración de salida (parlante Bluetooth)
 
-> Esta guía explica cómo configurar la Raspberry Pi para que el audio salga por el conector de 3.5mm (el que conecta al amplificador y de ahí a los exciters). Si estás en fase de prototipo con Bluetooth, igual leé la sección de verificación básica.
+> Esta guía explica cómo hacer que el audio de *ella* salga por un parlante Bluetooth. La Raspberry Pi lo empareja una sola vez y después lo reconecta sola.
 
 ---
 
 ## El camino del audio en *ella*
 
 ```
-Raspberry Pi 3
-   │  (salida 3.5mm)
+Raspberry Pi
+   │  sox/play (motor de audio)
    ↓
-Cable de audio
+ALSA (dispositivo por defecto)
    ↓
-Amplificador (PAM8403 u otro)
+PulseAudio (sink A2DP)
    ↓
-Cables a los exciters
+Parlante Bluetooth (emparejado)
    ↓
-Exciters pegados a la alfombra
-   ↓
-🎵 Alfombra vibra como parlante
+🎵 Suena la instalación
 ```
+
+No hace falta conectar ningún cable de audio: el parlante es inalámbrico.
 
 ---
 
-## Paso 1 — Forzar salida por 3.5mm
+## Paso 1 — Emparejar el parlante Bluetooth
 
-Por defecto, la Raspberry Pi puede intentar mandar audio por HDMI o por el chip de audio. Necesitamos asegurarnos de que siempre use el conector de 3.5mm.
+La forma más fácil es desde el **Panel Web** (sección **"Bluetooth (Parlantes)"**):
 
-Conectate a la Pi por SSH y escribí:
+1. Pulsá *Escanear Dispositivos* — el panel busca parlantes cercanos.
+2. Asegurate de que el parlante esté en **modo emparejamiento** (pairing).
+3. Pulsá *Conectar* en tu parlante. El panel lo empareja, lo confía y lo conecta.
 
-```bash
-# Ver qué dispositivos de audio tiene la Pi
-aplay -l
-```
-
-Deberías ver algo como:
-```
-card 0: Headphones [bcm2835 Headphones], device 0: bcm2835 Headphones [bcm2835 Headphones]
-```
-
-El `card 0, device 0` es la salida de 3.5mm de la Pi. 
-
-Ahora configurá ALSA para que siempre use ese dispositivo:
+O por consola (SSH):
 
 ```bash
-# Crear o editar el archivo de configuración de ALSA
-cat > ~/.asoundrc << 'EOF'
-pcm.!default {
-    type hw
-    card 0
-    device 0
-}
-ctl.!default {
-    type hw
-    card 0
-}
-EOF
+bluetoothctl
+# Dentro de la consola interactiva:
+scan on          # esperá unos segundos y buscá tu parlante
+pair <MAC>       # ej: pair FC:58:FA:9E:3F:CD
+trust <MAC>
+connect <MAC>
+exit
 ```
 
-```bash
-# También forzar salida analógica desde la configuración del sistema
-sudo raspi-config nonint do_audio 1
-```
+> ⚠️ Anotá la **MAC** de tu parlante: la vas a necesitar para el paso 3.
 
 ---
 
 ## Paso 2 — Verificar que el audio funciona
 
 ```bash
-# Instalar archivos de audio de prueba
-sudo apt install -y sox alsa-utils
+# Ver que el parlante esté conectado (debe decir "Connected: yes"):
+bluetoothctl info <MAC>
 
-# Reproducir un tono de prueba (440 Hz, 3 segundos)
+# Ver que PulseAudio esté corriendo y tenga el parlante como salida:
+pactl info
+
+# Reproducir un tono de prueba (440 Hz, 3 segundos):
 play -n synth 3 sine 440
-
-# Si no escuchás nada, probar también:
-aplay /usr/share/sounds/alsa/Front_Left.wav
 ```
 
-Si escuchás sonido por el conector de 3.5mm (con auriculares o parlante de prueba conectado), todo está bien. ✅
+Si escuchás el tono por el parlante Bluetooth, todo está bien. ✅
 
 ---
 
-## Paso 3 — Ajustar el volumen
+## Paso 3 — Configurar el parlante en *ella*
+
+Para que el motor de audio reconecte el parlante automáticamente (por ejemplo tras un reinicio de la Pi), editá `pi/config.yaml` y completá:
+
+```yaml
+mac_parlante_bluetooth: "FC:58:FA:9E:3F:CD"
+```
+
+Reemplazá la MAC por la de tu parlante. Si la dejás vacía, el sistema usa el dispositivo de audio por defecto sin intentar reconectar.
+
+---
+
+## Paso 4 — Ajustar el volumen
+
+El parlante tiene su propio volumen físico, pero también podés ajustarlo desde la Pi:
 
 ```bash
-# Abrir el control de volumen de ALSA
+# Listar los sinks de PulseAudio:
+pactl list short sinks
+
+# Subir/bajar el volumen de un sink (ej: 85%):
+pactl set-sink-volume <nombre_o_index> 85%
+
+# O con la interfaz de ALSA:
 alsamixer
-```
-
-En la interfaz:
-- Usá las flechas arriba/abajo para subir/bajar volumen
-- `F6` para seleccionar la tarjeta de audio si hay más de una
-- `ESC` para salir
-
-```bash
-# O ajustar directamente desde comando (0-100):
-amixer set PCM 85%
-
-# Guardar la configuración de volumen para que persista al reiniciar:
-sudo alsactl store
+# F6 para elegir tarjeta, flechas para subir/bajar, ESC para salir
 ```
 
 ---
 
-## Paso 4 — Instalar sox (procesamiento de audio)
+## Paso 5 — Instalar sox (procesamiento de audio)
 
 El motor de audio de *ella* usa `sox` para reproducir archivos y aplicar efectos en tiempo real (velocidad, volumen).
 
@@ -120,31 +110,19 @@ sox --version
 
 ---
 
-## Paso 5 — Probar reproducción con sox
+## Paso 6 — Probar reproducción con sox
 
 ```bash
 # Copiar un archivo de audio de prueba al directorio correcto
 # (reemplazá 'mi_audio.wav' por un archivo que tengas)
 cp mi_audio.wav ~/ella/audio/
 
-# Reproducir con sox (debería escucharse por el 3.5mm)
+# Reproducir con sox (debería escucharse por el parlante Bluetooth)
 play ~/ella/audio/mi_audio.wav
 
 # Probar con efectos (80% de velocidad, 70% de volumen):
 play ~/ella/audio/mi_audio.wav tempo 0.8 vol 0.7
 ```
-
----
-
-## Configuración para la instalación final
-
-Una vez que tengas el amplificador y los exciters:
-
-1. Conectar cable de audio 3.5mm: **Pi → entrada del amplificador**
-2. Conectar cables de los exciters: **salida del amplificador → exciters**
-3. Los exciters se fijan a la base rígida debajo de la alfombra con epoxy o tornillos
-
-> Para más detalles sobre las conexiones físicas, ver [04-wiring.md](04-wiring.md)
 
 ---
 
@@ -158,9 +136,9 @@ python3 tests/test_audio.py
 ```
 
 Este script verifica que:
-- La salida de audio esté configurada en el dispositivo correcto
 - sox esté instalado
 - Haya al menos un archivo de audio en la carpeta configurada
+- La salida de audio funcione (reproduce un tono de prueba)
 
 ---
 

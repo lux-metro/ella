@@ -1,10 +1,9 @@
 # =============================================================
-# config.yaml — Configuración de la Raspberry Pi - Voz A
+# config.yaml — Configuración de la Raspberry Pi
 # =============================================================
 #
-# Este archivo define el comportamiento de ESTA Raspberry Pi.
-# Si tenés dos Pi, cada una tiene su propio config.yaml con
-# valores distintos.
+# Este archivo define el comportamiento de la Raspberry Pi
+# de la instalación (una sola Pi, una sola voz).
 #
 # Editá este archivo antes del deploy. No hace falta tocar el
 # código Python para cambiar estos parámetros.
@@ -14,15 +13,23 @@
 # =============================================================
 
 # --- Identificación del dispositivo ---
-voz: a
+voz: ella
 # Nombre de esta voz. Aparece en los logs.
-# Valores posibles: 'a', 'b' (cuando haya segunda Pi)
 
 # --- Audio ---
-dispositivo_audio: "hw:0,0"
+dispositivo_audio: "default"
 # El dispositivo de audio donde sale el sonido.
-# hw:0,0 = primera tarjeta de audio, primer dispositivo (salida 3.5mm de la Pi 3)
-# Para verificar qué dispositivos tenés, corré: aplay -l
+# El motor reproduce con sox ('play'), que usa el dispositivo
+# por defecto de ALSA. Ese default se enruta (vía PulseAudio)
+# al parlante Bluetooth emparejado. No hace falta cambiarlo.
+# Para ver qué dispositivos tenés, corré: aplay -l
+
+mac_parlante_bluetooth: ""
+# MAC del parlante Bluetooth (ej: "FC:58:FA:9E:3F:CD").
+# Si está definida, el motor intenta reconectarlo automáticamente
+# antes de reproducir (útil tras un reinicio de la Pi).
+# Dejalo vacío si usás otra salida de audio.
+# Podés emparejar el parlante desde el Panel Web (card Bluetooth).
 
 directorio_audio: "/home/pi/ella/audio"
 # Carpeta donde están los archivos de audio.
@@ -37,7 +44,7 @@ pausa_min_seg: 3
 
 pausa_max_seg: 20
 # Tiempo máximo de silencio entre clips, en segundos.
-# La pausa real varía según la humedad de la arcilla.
+# La pausa real varía según la presencia: con gente, el ritmo es más ágil.
 
 # --- Comunicación con el Arduino ---
 puerto_serial: "/dev/ttyS0"
@@ -56,9 +63,10 @@ baudrate: 9600
 # son los rangos, no la lógica (para cambiar la lógica, editá audio_engine.py).
 
 # Mapeo de sensores a efectos (para referencia):
-#   Humedad de arcilla  →  Tempo (velocidad)
-#                           más húmedo = más lento (rango: 0.6x a 1.2x)
-#   Temperatura         →  Volumen
-#                           más caliente = ligeramente más volumen (±20%)
-#   Luz ambiental       →  Variación de pitch
-#                           más oscuro = pitch estable / más luminoso = más variación
+#   Presencia (radar ESP32)  →  Tempo (velocidad)
+#                               más presencia = más rápido (rango: 0.6x a 1.2x)
+#                               sin radar = tempo aleatorio en el mismo rango
+#   Temperatura              →  Volumen
+#                               más caliente = ligeramente más volumen (±20%)
+#   Luz ambiental            →  Variación de pitch
+#                               más oscuro = pitch estable / más luminoso = más variación

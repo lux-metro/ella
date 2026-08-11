@@ -51,7 +51,7 @@ Con Raspberry Pi Imager abierto:
 5. Va a aparecer un diálogo que pregunta si querés personalizar la configuración. Hacé click en **"Edit Settings"** y configurá:
 
    **En la pestaña "General":**
-   - ✅ Set hostname: `ella-voz-a`
+   - ✅ Set hostname: `ella`
    - ✅ Set username and password:
      - Username: `pi`
      - Password: elegí una que recuerdes, la vas a necesitar
@@ -85,7 +85,7 @@ SSH te permite controlar la Pi desde tu computadora, sin necesitar conectarle mo
 
 1. Primero necesitás saber la IP de la Pi. Podés probar directamente con el hostname:
    ```bash
-   ssh pi@ella-voz-a.local
+   ssh pi@ella.local
    ```
    
    Si eso no funciona (algunos routers no soportan `.local`), buscá la IP en la interfaz de tu router, o usá:
@@ -101,7 +101,7 @@ SSH te permite controlar la Pi desde tu computadora, sin necesitar conectarle mo
 
 4. Si todo salió bien, deberías ver algo como:
    ```
-   pi@ella-voz-a:~ $
+   pi@ella:~ $
    ```
    
    ¡Ya estás adentro de la Pi!
@@ -149,13 +149,13 @@ Si el servicio aparece como `active (running)`, todo está bien. El Panel Web qu
 
 ---
 
-## Notas para cuando tengás la segunda Pi
+## Notas
 
-La segunda Pi se configura igual (con Raspberry Pi Imager, el hostname sería `ella-voz-b`):
-
-```bash
-curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
-```
+- La instalación usa **una sola Raspberry Pi** (una sola voz). No hay que configurar una segunda Pi.
+- Si grabaste la SD card antes y querés usar el hostname `ella` sin regrabar, cambiálo desde la Pi:
+  ```bash
+  sudo hostnamectl set-hostname ella
+  ```
 
 ---
 

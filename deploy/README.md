@@ -16,7 +16,7 @@ Es un solo comando que corrés **adentro** de la Raspberry Pi. Hace todo por vos
 ### Opción 2: Ansible (`ansible/`) — Más avanzado
 Es un sistema que corrés en **tu computadora**, y que se conecta a la(s) Pi por red para configurarlas sin que tengas que tocarlas.
 
-*Ideal para cuando tenés las dos Pi funcionando y querés actualizar el código en ambas al mismo tiempo con un solo comando.*
+*Ideal para cuando tenés la Pi funcionando y querés actualizar el código con un solo comando.*
 
 ---
 
@@ -26,7 +26,7 @@ Es un sistema que corrés en **tu computadora**, y que se conecta a la(s) Pi por
 2. Una vez adentro de la Pi, corré este comando:
 
 ```bash
-# Para instalar la Voz A:
+# Instalación de la Raspberry Pi:
 curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
 ```
 
@@ -70,6 +70,7 @@ El Panel Web queda en `http://<IP_DE_LA_PI>:5000` (buscá la IP con `hostname -I
 
 Siguientes pasos lógicos:
 1. Subir archivos de audio reales a `~/ella/audio/`
-2. Conectar el Arduino y los exciters
-3. Ajustar el volumen (ver `docs/03-audio-setup.md`)
-4. Cuando la instalación esté montada, activar el Access Point desde el Panel Web
+2. Emparejar el parlante Bluetooth (ver `docs/03-audio-setup.md`)
+3. Conectar el Arduino y los sensores
+4. Ajustar el volumen (ver `docs/03-audio-setup.md`)
+5. Cuando la instalación esté montada, activar el Access Point desde el Panel Web

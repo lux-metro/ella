@@ -17,21 +17,18 @@
 ## 1. ¿Qué es cada componente?
 
 ### Raspberry Pi 3 Model B
-Una computadora pequeña del tamaño de una tarjeta de crédito. Corre Linux (un sistema operativo), puede conectarse a internet, y tiene una salida de audio de 3.5mm igual a la de un celular. En esta instalación, es la que corre el software de audio y controla el sonido.
+Una computadora pequeña del tamaño de una tarjeta de crédito. Corre Linux (un sistema operativo), puede conectarse a internet, y puede mandar el sonido a un parlante Bluetooth. En esta instalación, es la que corre el software de audio y controla el sonido.
 
 *Necesitás una SD card para que funcione — es su "disco duro".*
 
 ### Arduino Uno
-Un microcontrolador: una pequeña placa electrónica diseñada para leer sensores y controlar cosas físicas. No corre un sistema operativo completo — corre un único programa que vos le cargás. En esta instalación, lee los sensores de humedad, temperatura y luz, y manda esos datos a la Raspberry Pi.
+Un microcontrolador: una pequeña placa electrónica diseñada para leer sensores y controlar cosas físicas. No corre un sistema operativo completo — corre un único programa que vos le cargás. En esta instalación, lee los sensores de temperatura y luz, y manda esos datos a la Raspberry Pi.
 
-### Transductor de vibración / Exciter
-Un dispositivo que convierte señales de audio en vibraciones mecánicas. Cuando lo pegás a una superficie (como la alfombra), esa superficie se convierte en el parlante. Es el corazón conceptual de la instalación: el sonido sale desde adentro de la alfombra misma.
+### Parlante Bluetooth
+El sonido de la instalación sale por un parlante Bluetooth inalámbrico. La Raspberry Pi lo empareja una sola vez (desde el Panel Web o por consola) y después el sistema lo reconecta automáticamente cuando se enciende.
 
-### Amplificador de audio
-El audio que sale de la Raspberry Pi es muy débil. El amplificador lo hace más fuerte antes de mandarlo al exciter. Sin amplificador, el exciter no va a vibrar lo suficiente.
-
-### Sensor de humedad de suelo
-Una sondita que medís la conductividad eléctrica de la arcilla. La arcilla húmeda conduce más electricidad que la seca. Con este sensor podemos saber qué tan húmeda está la arcilla en tiempo real, y que eso influya en el sonido.
+### Radar de presencia (ESP32-C3 + RCWL-0516)
+Un módulo con un radar de microondas que detecta movimiento (a diferencia de los sensores del Arduino, no mide el ambiente sino la gente). Cuando alguien se acerca, la Raspberry Pi lo nota y acelera el tempo de la pieza: la instalación reacciona a los visitantes.
 
 ---
 
@@ -48,7 +45,7 @@ Una sondita que medís la conductividad eléctrica de la arcilla. La arcilla hú
 | **Ansible** | Herramienta que corre en tu computadora y configura la Raspberry Pi automáticamente por SSH. |
 | **firmware** | El programa que corre en el Arduino. A diferencia de un archivo común, se "graba" directamente en el chip. |
 | **pin** | Los conectores metálicos en los bordes del Arduino y la Raspberry Pi. Cada uno tiene un nombre o número. |
-| **ALSA** | El sistema de audio de Linux. Lo vamos a usar para configurar la salida de 3.5mm. |
+| **ALSA** | El sistema de audio de Linux. Lo usamos para enrutar el audio al parlante Bluetooth. |
 | **sox / play** | Herramientas de audio de línea de comandos. `sox` procesa audio, `play` lo reproduce. Ya las usaste en el prototipo. |
 | **Git** | Sistema de control de versiones. Guarda el historial de cambios del código. GitHub es el sitio web donde guardás el repositorio. |
 
@@ -57,7 +54,7 @@ Una sondita que medís la conductividad eléctrica de la arcilla. La arcilla hú
 ## 3. Lista de hardware completa
 
 ### Ya tenés
-- ✅ 2× Raspberry Pi 3 Model B
+- ✅ 1× Raspberry Pi 3 Model B
 - ✅ Arduino Uno (del Starter Kit)
 - ✅ Cable USB tipo A a tipo B (para conectar Arduino a computadora)
 - ✅ Cables Dupont (vienen en el Starter Kit)
@@ -67,16 +64,14 @@ Una sondita que medís la conductividad eléctrica de la arcilla. La arcilla hú
 
 | Componente | Para qué sirve | Dónde buscarlo |
 |------------|---------------|----------------|
-| SD card ×2 | "Disco duro" de cada Pi. Mínimo 8GB, clase 10 o A1 | Ferretería, libre mercado |
-| Sensor humedad suelo | Leer humedad de la arcilla | MercadoLibre: "sensor humedad suelo arduino" |
+| SD card ×1 | "Disco duro" de la Pi. Mínimo 8GB, clase 10 o A1 | Ferretería, libre mercado |
 | Sensor temperatura LM35 | Leer temperatura ambiente | MercadoLibre: "LM35 arduino" |
 | Fotoresistor / LDR | Leer luz ambiental | MercadoLibre: "LDR 5mm arduino" |
-| Exciter / transductor ×2 | Convertir alfombra en parlante | MercadoLibre: "transductor exciter" / "shaker exciter audio" |
-| Amplificador PAM8403 | Amplificar audio antes del exciter | MercadoLibre: "PAM8403 amplificador" |
-| Fuente 5V 3A ×2 | Alimentar cada Raspberry Pi | MercadoLibre: "fuente 5v 3a raspberry pi" |
-| Cable de audio 3.5mm | Pi → amplificador | Cualquier ferretería o electronica |
+| ESP32-C3 + radar RCWL-0516 | Detectar presencia de visitantes | MercadoLibre: "ESP32-C3" / "RCWL-0516" |
+| Parlante Bluetooth | Salida de audio de la instalación | Cualquier tienda de audio o celulares |
+| Fuente 5V 3A ×1 | Alimentar la Raspberry Pi | MercadoLibre: "fuente 5v 3a raspberry pi" |
 
-> **Nota sobre los exciters:** El Dayton Audio DAEX25 es el más recomendado para instalaciones de arte, pero puede ser difícil de conseguir localmente. Alternativas: cualquier transductor de vibración de 4-8 ohm, 10-25W. En duda, escribime.
+> **Nota sobre el parlante Bluetooth:** Cualquier parlante inalámbrico sirve. Es importante que tenga modo Bluetooth (A2DP) y que se apague/recupere bien cuando pierde señal. Se empareja una sola vez desde el Panel Web.
 
 ### Opcional (mejora la confiabilidad)
 - UPS / batería de respaldo para las Pi (evita apagados bruscos por cortes de luz)
@@ -87,7 +82,6 @@ Una sondita que medís la conductividad eléctrica de la arcilla. La arcilla hú
 
 - Computadora con Linux (para correr Ansible y conectarte por SSH)
 - Cable de red ethernet (recomendado para el primer setup de la Pi)
-- Soldador y estaño (para conectar el exciter al amplificador)
 - Multímetro (para verificar conexiones, opcional pero útil)
 - Cinta aisladora o termocontraíble
 

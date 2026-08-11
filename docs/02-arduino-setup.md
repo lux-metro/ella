@@ -1,6 +1,6 @@
 # Arduino — Setup y carga del firmware
 
-> El Arduino es el "oído" del sistema: lee los sensores físicos (humedad de la arcilla, temperatura, luz) y manda esa información a la Raspberry Pi. Esta guía explica cómo cargar el programa en el Arduino desde cero.
+> El Arduino es el "oído" del sistema: lee los sensores físicos (temperatura, luz) y manda esa información a la Raspberry Pi. Esta guía explica cómo cargar el programa en el Arduino desde cero.
 
 ---
 
@@ -59,8 +59,8 @@ Arduino IDE es un programa gráfico con un botón grande que dice "Subir". Es la
 2. Abajo a la derecha, verificá que la velocidad diga **9600 baud**
 3. Deberías ver líneas de texto como:
    ```json
-   {"humidity":65,"temperature":22,"light":180}
-   {"humidity":64,"temperature":22,"light":181}
+   {"temperature":22,"light":180}
+   {"temperature":22,"light":181}
    ```
    
    Eso significa que el Arduino está leyendo sensores y mandando datos. ✅
@@ -123,11 +123,10 @@ El programa en el Arduino (`sensor_hub.ino`) hace tres cosas:
 
 El formato de los datos es:
 ```json
-{"humidity":65,"temperature":22,"light":180,"ok":true}
+{"temperature":22,"light":180,"ok":true}
 ```
 
 Donde:
-- `humidity`: 0-1023 (valor crudo del sensor analógico)
 - `temperature`: temperatura en décimas de grado (220 = 22.0°C)
 - `light`: 0-1023 (0 = oscuridad total, 1023 = luz máxima)
 - `ok`: siempre `true` si el Arduino está funcionando (útil para detectar si se colgó)
@@ -136,11 +135,10 @@ Donde:
 
 ## Conexión física de los sensores
 
-Los sensores se conectan a los pines analógicos del Arduino (A0, A1, A2).
+Los sensores se conectan a los pines analógicos del Arduino (A1, A2).
 
 | Sensor | Pin del Arduino | Color de cable recomendado |
 |--------|----------------|---------------------------|
-| Sensor humedad suelo (señal) | A0 | Amarillo |
 | Sensor temperatura LM35 (señal) | A1 | Naranja |
 | Fotoresistor / LDR (señal) | A2 | Verde |
 | Alimentación (todos) | 5V | Rojo |

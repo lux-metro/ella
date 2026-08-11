@@ -15,7 +15,7 @@ Uso:
 
     # En cualquier momento:
     sensores = lector.obtener_sensores()
-    print(sensores['humidity'])  # → 0.65 (normalizado entre 0.0 y 1.0)
+    print(sensores['temperature'])  # → 0.55 (normalizado entre 0.0 y 1.0)
 
     lector.detener()
 """
@@ -55,7 +55,6 @@ class LectorSerial:
         # Valores actuales de los sensores, normalizados entre 0.0 y 1.0
         # Estos valores se actualizan continuamente desde el hilo de lectura
         self._sensores = {
-            'humidity': 0.5,      # Humedad de la arcilla
             'temperature': 0.5,   # Temperatura ambiente
             'light': 0.5,         # Luz ambiental
         }
@@ -89,7 +88,7 @@ class LectorSerial:
         Los valores son floats entre 0.0 y 1.0.
 
         Retorna:
-            dict con claves 'humidity', 'temperature', 'light'
+            dict con claves 'temperature', 'light'
         """
         with self._lock:
             return dict(self._sensores)
@@ -148,9 +147,6 @@ class LectorSerial:
 
             # Normalizar valores crudos (0-1023) a rango 0.0-1.0
             with self._lock:
-                if 'humidity' in datos:
-                    self._sensores['humidity'] = datos['humidity'] / 1023.0
-
                 if 'temperature' in datos:
                     # Temperatura: interpretamos 0-400 (0-40°C) como 0.0-1.0
                     temp_celsius = datos['temperature'] / 10.0
@@ -189,9 +185,6 @@ class LectorSerial:
             # Generar valores que cambian lentamente con ondas sinusoidales
             # Cada sensor tiene una frecuencia diferente para que no vayan sincronizados
             with self._lock:
-                self._sensores['humidity'] = (
-                    0.5 + 0.3 * math.sin(t * 0.1) + 0.05 * random.gauss(0, 1)
-                )
                 self._sensores['temperature'] = (
                     0.5 + 0.2 * math.sin(t * 0.07 + 1.0) + 0.02 * random.gauss(0, 1)
                 )

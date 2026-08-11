@@ -1,13 +1,13 @@
 """
-config_loader.py — Carga la configuración específica de este dispositivo
+config_loader.py — Carga la configuración de la Raspberry Pi
 
-Este módulo lee el archivo config.yaml de la voz correspondiente
-(voice_a o voice_b) y lo pone disponible para el resto del programa.
+Este módulo lee el archivo config.yaml de la instalación y lo
+pone disponible para el resto del programa.
 
 Uso:
     from config_loader import cargar_config
     config = cargar_config()
-    print(config['voz'])  # → 'a'
+    print(config['voz'])  # → 'ella'
 """
 
 import os
@@ -24,9 +24,8 @@ def cargar_config():
 
     Busca el archivo en las siguientes ubicaciones (en orden):
     1. Variable de entorno ELLA_CONFIG (para tests o setups no estándar)
-    2. /home/pi/ella/pi/voice_a/config.yaml  (instalación estándar, Voz A)
-    3. /home/pi/ella/pi/voice_b/config.yaml  (instalación estándar, Voz B)
-    4. Relativo al directorio del script (para desarrollo local)
+    2. pi/config.yaml relativo a la raíz del repositorio (instalación estándar)
+    3. Relativo al directorio del script (para desarrollo local)
 
     Retorna:
         dict: Diccionario con toda la configuración.
@@ -47,18 +46,15 @@ def cargar_config():
             os.path.join(os.path.dirname(__file__), '..', '..')
         )
 
-        # Buscar config en voice_a primero, luego voice_b
-        for voz in ['voice_a', 'voice_b']:
-            candidato = os.path.join(directorio_raiz, 'pi', voz, 'config.yaml')
-            if os.path.exists(candidato):
-                ruta_config = candidato
-                break
+        candidato = os.path.join(directorio_raiz, 'pi', 'config.yaml')
+        if os.path.exists(candidato):
+            ruta_config = candidato
 
     # Si no encontramos ningún config, no podemos continuar
     if not ruta_config or not os.path.exists(ruta_config):
         logger.error(
             "No se encontró ningún archivo config.yaml. "
-            "Asegurate de que exista pi/voice_a/config.yaml o pi/voice_b/config.yaml. "
+            "Asegurate de que exista pi/config.yaml. "
             "También podés definir la variable de entorno ELLA_CONFIG con la ruta completa."
         )
         sys.exit(1)

@@ -6,13 +6,13 @@ Instalación textil de Sandra Pauli y Rosario Oliva
 
 Ella propone al textil como un territorio donde memoria, cuerpo e historia se entrelazan. Una antigua alfombra persa es abierta y reparada mediante la sutura con vellón, transformando la herida en un gesto de repetición que alivia. El tejido activa relatos íntimos y memorias heredadas que encuentran eco en los diarios de la abuela de Sandra Pauli, escritos entre 1943 y 1982. La obra convierte el acto de entrelazar en una forma de hacer visible lo oculto y entiende la reparación y el tejido como una práctica de transmisión, resistencia y transformación.*  
 
-> Este código da soporte a una instalación aumentada con sonido emitido desde adentro de la alfombra usando transductores de vibración (exciters). Las condiciones del entorno influyen sobre el comportamiento del audio.
+> Este código da soporte a una instalación aumentada con sonido emitido por un parlante Bluetooth que acompaña la obra. Las condiciones del entorno influyen sobre el comportamiento del audio.
 
 ---
 
 ## ¿Qué hace este repositorio?
 
-Este repositorio contiene todo el software, firmware y documentación para montar la instalación *ella*: dos Raspberry Pi que generan audio evolutivo, un Arduino que lee sensores ambientales (humedad de la arcilla, temperatura, luz), y transductores de vibración que convierten la alfombra en el parlante.
+Este repositorio contiene todo el software, firmware y documentación para montar la instalación *ella*: una Raspberry Pi que genera audio evolutivo, un Arduino que lee sensores ambientales (temperatura, luz), un radar de presencia que detecta a los visitantes, y un parlante Bluetooth por el que sale el sonido. La presencia de gente acelera el tempo de la pieza.
 
 **Si estás arrancando desde cero**, empezá por: [docs/00-antes-de-empezar.md](docs/00-antes-de-empezar.md)
 
@@ -84,23 +84,23 @@ Tienes dos opciones:
 
 ```
                     ┌─────────────────────────────────┐
-                    │         ALFOMBRA (ella)         │
-                    │  [exciter] <── amplificador <── │
+                    │        ALFOMBRA (ella)         │
+                    │       🎵 parlante Bluetooth     │
                     └─────────────────────────────────┘
                                    ▲
-                                   │ audio 3.5mm
+                                   │ A2DP (PulseAudio)
                     ┌───────────────────────────────────┐
-                    │       Raspberry Pi 3 (Voz A)      │
+                    │        Raspberry Pi 3 (una)       │
                     │   audio_engine.py + sox/play      │
-                    └──────────────┬────────────────────┘
-                                   │ UART serie (cable)
-                    ┌──────────────▼────────────────────┐
-                    │           Arduino Uno             │
-                    │  sensor humedad · temp · luz      │
-                    └───────────────────────────────────┘
+                    └──────┬───────────────────┬────────┘
+                           │ UART serie        │ UDP (red)
+                    ┌──────▼───────┐    ┌──────▼──────────┐
+                    │  Arduino Uno │    │  ESP32-C3       │
+                    │  temp · luz  │    │  radar presencia│
+                    └──────────────┘    └─────────────────┘
 ```
 
-*(En la instalación final habrá dos Raspberry Pi, cada una manejando una voz independiente)*
+*La instalación usa una sola Raspberry Pi: una única voz que evoluciona según los sensores y la presencia de visitantes.*
 
 ---
 
@@ -120,16 +120,15 @@ Tienes dos opciones:
 Listado completo con links en [docs/00-antes-de-empezar.md](docs/00-antes-de-empezar.md).
 
 **Resumen:**
-- 1× Raspberry Pi 3 Model B (ya tenés 2)
+- 1× Raspberry Pi 3 Model B (ya tenés)
 - 1× Arduino Uno (del Starter Kit)
-- 1× Sensor de humedad de suelo (ej: resistivo analógico)
 - 1× Sensor de temperatura (ej: LM35 o NTC)
 - 1× Fotoresistor (LDR) para luz ambiental
-- 2× Transductor de vibración / exciter (ej: Dayton Audio DAEX25)
-- 1× Amplificador de audio (ej: PAM8403, 3W stereo)
+- 1× Módulo radar de presencia (ESP32-C3 + RCWL-0516)
+- 1× Parlante Bluetooth
 - Cables Dupont macho-macho y macho-hembra
-- SD cards (mínimo 8GB, clase 10)
-- Fuente de alimentación 5V para cada Pi
+- SD card (mínimo 8GB, clase 10)
+- Fuente de alimentación 5V para la Pi
 
 ---
 

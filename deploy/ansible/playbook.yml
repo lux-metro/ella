@@ -25,6 +25,8 @@
           - alsa-utils
           - curl
           - watchdog
+          - pulseaudio
+          - pulseaudio-module-bluetooth
         state: present
         
     - name: Clonar repositorio del proyecto
@@ -46,25 +48,6 @@
         requirements: "{{ install_dir }}/pi/shared/requirements.txt"
         virtualenv: "{{ install_dir }}/.venv"
         
-    - name: Configurar Voz A (si el nombre contiene 'voz-a')
-      become: no
-      file:
-        src: "{{ install_dir }}/pi/voice_a/config.yaml"
-        dest: "{{ install_dir }}/pi/shared/config.yaml"
-        state: link
-      when: "'voz-a' in inventory_hostname"
-      
-    - name: Configurar Voz B (si el nombre contiene 'voz-b')
-      become: no
-      file:
-        src: "{{ install_dir }}/pi/voice_b/config.yaml"
-        dest: "{{ install_dir }}/pi/shared/config.yaml"
-        state: link
-      when: "'voz-b' in inventory_hostname"
-      
-    - name: Forzar salida de audio por 3.5mm (raspi-config)
-      command: raspi-config nonint do_audio 1
-      
     - name: Deshabilitar consola serial pero habilitar puerto UART por hardware
       command: raspi-config nonint do_serial 2
       

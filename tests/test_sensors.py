@@ -2,7 +2,7 @@
 test_sensors.py — Script para validar los datos que llegan de los sensores
 
 Este script se enfoca exclusivamente en imprimir continuamente los
-valores normalizados de los tres sensores (humedad, temperatura, luz).
+valores normalizados de los sensores (temperatura, luz).
 Útil para calibración física (ej: tapar el sensor de luz y ver si cambia).
 
 Uso:
@@ -23,8 +23,8 @@ def barra(valor, longitud=20):
 
 def testear():
     print("=== Monitor de Sensores en Tiempo Real ===")
-    print("Moviendo la mano sobre el sensor de luz o tocando el sensor")
-    print("de humedad debería verse reflejado inmediatamente acá.")
+    print("Moviendo la mano sobre el sensor de luz o cambiando la")
+    print("temperatura debería verse reflejado inmediatamente acá.")
     print("-" * 50)
     
     # Intentar varios puertos
@@ -48,14 +48,12 @@ def testear():
         while True:
             sensores = lector.obtener_sensores()
             
-            h = sensores['humidity']
             t = sensores['temperature']
             l = sensores['light']
             
             # Imprimir con carriage return (\r) para sobreescribir la misma línea
             linea = (
-                f"\rHum: {h:.2f} {barra(h)} | "
-                f"Tem: {t:.2f} {barra(t)} | "
+                f"\rTem: {t:.2f} {barra(t)} | "
                 f"Luz: {l:.2f} {barra(l)}"
             )
             # Imprimir al final para forzar la actualización de la pantalla

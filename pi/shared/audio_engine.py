@@ -11,6 +11,10 @@ El audio se reproduce usando 'sox' (el comando 'play') a través de
 subprocess. Esto es consistente con el prototipo bash original y
 es muy robusto: si una reproducción falla, simplemente pasa a la siguiente.
 
+La salida de audio es un parlante Bluetooth emparejado con la Pi.
+Si 'mac_parlante_bluetooth' está definida en config.yaml, el motor
+verifica la conexión antes de reproducir y la restablece si hace falta.
+
 Uso:
     from audio_engine import MotorDeAudio
     motor = MotorDeAudio(config, lector_serial)
@@ -33,7 +37,7 @@ class MotorDeAudio:
 
     Toma la configuración del dispositivo y un lector de sensores,
     y genera una performance sonora continua que evoluciona según
-    los datos biológicos de la instalación.
+    la temperatura, la luz y la presencia de visitantes.
     """
 
     def __init__(self, config: dict, lector_serial=None):
@@ -100,6 +104,9 @@ class MotorDeAudio:
             # Calcular efectos basados en los sensores actuales
             efectos = self._calcular_efectos()
 
+            # Asegurar que el parlante Bluetooth esté conectado
+            self._asegurar_conexion_bluetooth()
+
             # Reproducir el archivo con los efectos
             self._reproducir(archivo, efectos)
 
@@ -134,8 +141,9 @@ class MotorDeAudio:
         """
         Calcula los parámetros de efectos de audio basados en los sensores.
 
-        Si hay datos de sensores reales, los usa para modular los efectos.
-        Si no, usa valores por defecto con variación aleatoria sutil.
+        La presencia (radar ESP32) modula el tempo, la temperatura el
+        volumen y la luz la variación de pitch. Si no hay datos de un
+        sensor, usa valores por defecto con variación aleatoria sutil.
 
         Retorna:
             dict con claves 'volumen', 'tempo', 'pitch_shift'
@@ -145,12 +153,11 @@ class MotorDeAudio:
         else:
             # Sin sensores: valores neutros con variación aleatoria
             sensores = {
-                'humidity': 0.5 + 0.1 * random.gauss(0, 1),
                 'temperature': 0.5,
                 'light': 0.5,
             }
 
-        humedad = max(0.0, min(1.0, sensores['humidity']))
+        presencia = self._obtener_presencia()
         temperatura = max(0.0, min(1.0, sensores['temperature']))
         luz = max(0.0, min(1.0, sensores['light']))
 
@@ -158,10 +165,14 @@ class MotorDeAudio:
         # Estas son las decisiones artísticas centrales del sistema.
         # Podés cambiarlas para alterar el comportamiento sonoro.
 
-        # HUMEDAD → TEMPO
-        # Más húmedo = más lento (la arcilla pesada y húmeda es más lenta)
-        # Rango: 0.6 (muy húmedo, muy lento) a 1.2 (muy seco, más rápido)
-        tempo = 0.6 + (1.0 - humedad) * 0.6
+        # PRESENCIA → TEMPO
+        # Más presencia = más rápido (la instalación reacciona a los visitantes)
+        # Rango: 0.6 (nadie, ambiente lento) a 1.2 (alguien cerca, activo)
+        # Sin datos de presencia (radar apagado): tempo aleatorio en el mismo rango
+        if presencia is None:
+            tempo = random.uniform(0.6, 1.2)
+        else:
+            tempo = 0.6 + presencia * 0.6
 
         # TEMPERATURA → VOLUMEN
         # Más caliente = ligeramente más volumen (activación)
@@ -182,10 +193,14 @@ class MotorDeAudio:
             'pitch_shift': pitch_shift,
         }
 
+        if presencia is not None:
+            logger.debug(f"Presencia: {presencia:.2f}")
+        else:
+            logger.debug("Sin datos de presencia (tempo aleatorio).")
+
         if self.lector_serial and not self.lector_serial.modo_simulado:
             logger.debug(
-                f"Sensores reales — Humedad: {humedad:.2f}, "
-                f"Temp: {temperatura:.2f}, Luz: {luz:.2f}"
+                f"Sensores reales — Temp: {temperatura:.2f}, Luz: {luz:.2f}"
             )
         else:
             logger.debug("Usando valores simulados de sensores.")
@@ -196,6 +211,76 @@ class MotorDeAudio:
         )
 
         return efectos
+
+    def _obtener_presencia(self):
+        """
+        Lee la intensidad de presencia del radar ESP32 (0.0-1.0).
+
+        El servicio 'sentir-presencia' escribe continuamente el valor
+        suavizado en /tmp/intensidad.txt.
+
+        Retorna:
+            float entre 0.0 y 1.0, o None si no hay datos disponibles
+            (por ej: el servicio de presencia no está corriendo).
+        """
+        try:
+            with open('/tmp/intensidad.txt', 'r') as archivo:
+                valor = float(archivo.read().strip())
+            return max(0.0, min(1.0, valor))
+        except Exception:
+            return None
+
+    def _asegurar_conexion_bluetooth(self) -> bool:
+        """
+        Verifica que el parlante Bluetooth esté conectado y, si no,
+        intenta reconectarlo (patrón del prototipo bash).
+
+        Solo actúa si config.yaml tiene definida 'mac_parlante_bluetooth'.
+        Si la conexión falla, el audio saldrá por el dispositivo por defecto.
+
+        Retorna:
+            True si el parlante está conectado (o no hay MAC configurada).
+        """
+        mac = self.config.get('mac_parlante_bluetooth', '').strip()
+        if not mac:
+            return True
+
+        def esta_conectado() -> bool:
+            try:
+                info = subprocess.run(
+                    ['bluetoothctl', 'info', mac],
+                    capture_output=True, text=True, timeout=10,
+                ).stdout
+                return 'Connected: yes' in info
+            except Exception:
+                return False
+
+        if esta_conectado():
+            return True
+
+        logger.info(
+            f"Parlante Bluetooth no conectado. Intentando conectar {mac}..."
+        )
+        for intento in range(1, 6):
+            try:
+                subprocess.run(
+                    ['bluetoothctl', 'connect', mac],
+                    capture_output=True, text=True, timeout=15,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Error al conectar Bluetooth (intento {intento}/5): {e}"
+                )
+            time.sleep(3)
+            if esta_conectado():
+                logger.info(f"Parlante Bluetooth {mac} conectado.")
+                return True
+
+        logger.error(
+            f"No se pudo conectar el parlante Bluetooth {mac}. "
+            "El audio saldrá por el dispositivo por defecto."
+        )
+        return False
 
     def _reproducir(self, ruta_archivo: str, efectos: dict):
         """

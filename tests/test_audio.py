@@ -32,7 +32,7 @@ def testear():
 
     # 2. Generar un tono de prueba con synth
     print("\nGenerando tono de prueba (440Hz) durante 2 segundos...")
-    print("Deberías escuchar un sonido continuo tipo pitido por el 3.5mm.")
+    print("Deberías escuchar un sonido continuo tipo pitido por el parlante Bluetooth.")
     try:
         subprocess.run(['play', '-n', 'synth', '2', 'sine', '440', 'vol', '0.5'], check=True)
         print("✅ Tono reproducido.")

@@ -1,6 +1,6 @@
 # Conexiones físicas — Diagrama de cableado
 
-> Esta guía describe cómo conectar todos los componentes físicamente. Incluye la conexión UART entre Arduino y Raspberry Pi (la "línea de comunicación" entre ellos), y la cadena de audio hasta los exciters.
+> Esta guía describe cómo conectar todos los componentes físicamente. Incluye la conexión UART entre Arduino y Raspberry Pi (la "línea de comunicación" entre ellos). El parlante no lleva cables: se conecta por Bluetooth (ver [03-audio-setup.md](03-audio-setup.md)).
 
 ---
 
@@ -53,53 +53,7 @@ La fórmula del divisor: `Vout = Vin × R2 / (R1 + R2) = 5V × 2000 / 3000 ≈ 3
 
 ---
 
-## Conexión cadena de audio
-
-```
-Raspberry Pi 3
-│  Pin 3.5mm (conector verde/negro en la placa)
-│
-├── Cable de audio 3.5mm (macho-macho)
-│
-▼
-Amplificador PAM8403
-│  Entrada: 3.5mm o terminales L/R
-│  Salida: terminales A+ A- B+ B-
-│
-├── Cable fino (estaño soldado)
-│
-▼
-Exciter / transductor de vibración
-│  (dos cables: + y -)
-│
-▼
-🎵 Alfombra vibra
-```
-
-### Conexión del exciter al amplificador PAM8403
-
-El PAM8403 tiene terminales de tornillo (o pads de soldadura). El exciter tiene dos cables.
-
-| Amplificador | Cable | Exciter |
-|-------------|-------|---------|
-| Canal A+ (o L+) | → | Cable rojo (o el marcado +) |
-| Canal A- (o L-) | → | Cable negro (o el marcado -) |
-
-> Si tenés dos exciters, uno va al canal A (Left) y el otro al canal B (Right).
-
----
-
 ## Conexión sensores → Arduino
-
-### Sensor de humedad de suelo
-
-```
-Módulo sensor (lado del módulo, no la sonda):
-  VCC ──── Arduino 5V
-  GND ──── Arduino GND
-  AO  ──── Arduino A0   (salida analógica)
-  DO  ──── (no conectar, no lo usamos)
-```
 
 ### Sensor de temperatura LM35
 
@@ -130,10 +84,8 @@ LM35 (visto de frente, con el texto legible):
 
 - [ ] Divisor de voltaje armado (R1 y R2 entre Arduino TX y Pi RX)
 - [ ] Cable tierra común entre Arduino GND y Pi GND
-- [ ] Cable de audio 3.5mm conectado Pi → amplificador
-- [ ] Exciter(es) conectado(s) al amplificador
-- [ ] Sensores conectados a los pines A0, A1, A2 del Arduino
-- [ ] Amplificador alimentado (puede ser con la misma fuente de la Pi o una separada)
+- [ ] Sensores conectados a los pines A1, A2 del Arduino
+- [ ] Parlante Bluetooth emparejado y conectado (ver [03-audio-setup.md](03-audio-setup.md))
 
 ---
 

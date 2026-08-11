@@ -12,6 +12,8 @@ Se probó usar una Raspberry Pi Zero 2 W para la instalación.
 - **Descartada para la instalación final:** La Pi Zero no tiene salida de audio analógica de 3.5mm nativa. Para conectar el amplificador de los exciters se necesita sí o sí una salida analógica (o agregarle un DAC I2S, lo que complica el hardware).
 - **Decisión:** Usar las Raspberry Pi 3 Model B, que ya tienen conector de 3.5mm integrado.
 
+**Actualización posterior (decisión final):** La instalación final usa **una sola Raspberry Pi** y la salida de audio es por **parlante Bluetooth** (no exciters). Las notas de 3.5mm/exciters quedan como registro histórico de esta etapa de prototipado.
+
 ## 2026-08 - Pruebas con sox (bash)
 
 El script `play_random.sh` (en esta misma carpeta) validó que:

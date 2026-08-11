@@ -35,8 +35,9 @@ sudo apt-get upgrade -y
 echo "--- Instalando dependencias ---"
 # sox, libsox-fmt-all: para el motor de audio
 # network-manager: gestión de red (el Access Point se arma con nmcli)
+# pulseaudio, pulseaudio-module-bluetooth: para la salida por parlante Bluetooth
 # python3-venv, pip, git: para el entorno
-sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl network-manager
+sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl network-manager pulseaudio pulseaudio-module-bluetooth
 
 # Asegurar pertenencia a grupos (dialout para UART, audio para sonido)
 sudo usermod -a -G dialout,audio "$PI_USER"

@@ -54,8 +54,7 @@ def testear():
             sensores = lector.obtener_sensores()
             modo = "SIMULADO" if lector.modo_simulado else "REAL"
             
-            print(f"[{modo}] Humedad: {sensores['humidity']:.2f} | "
-                  f"Temp: {sensores['temperature']:.2f} | "
+            print(f"[{modo}] Temp: {sensores['temperature']:.2f} | "
                   f"Luz: {sensores['light']:.2f}")
                   
             time.sleep(1)

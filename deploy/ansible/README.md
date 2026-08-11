@@ -1,14 +1,13 @@
 # Ansible para Deploy Remoto
 
-> Ansible te permite instalar o actualizar todas las Raspberry Pi de tu instalación al mismo tiempo, desde tu propia computadora, sin tener que entrar por SSH a cada una.
+> Ansible te permite instalar o actualizar la Raspberry Pi de tu instalación desde tu propia computadora, sin tener que entrar por SSH.
 
 ---
 
 ## Cuándo usar esto
 
-- Tenés más de una Pi funcionando.
-- Querés actualizar el código en todas a la vez sin repetir pasos.
-- Querés mantener un registro centralizado de las IPs de todas tus Pi.
+- Querés instalar o actualizar el código de la Pi sin repetir pasos.
+- Querés mantener un registro centralizado de las IPs de tus Pi.
 
 ## Prerrequisitos (en tu PC con Linux)
 
@@ -24,13 +23,13 @@
    # 1. Generar una clave en tu PC (si no tenés una, apretá Enter a todo)
    ssh-keygen -t rsa -b 4096
 
-   # 2. Copiar la clave a la Voz A (cambiá la IP por la real)
+   # 2. Copiar la clave a la Pi (cambiá la IP por la real)
    ssh-copy-id pi@192.168.1.100
    ```
 
 ## Cómo usarlo
 
-1. Editá el archivo `inventory.ini` en esta carpeta y poné las IPs reales de tus Pi.
+1. Editá el archivo `inventory.ini` en esta carpeta y poné la IP real de tu Pi.
 2. Editá `playbook.yml` y asegurate de que `repo_url` tenga tu usuario de GitHub.
 3. Abrí una terminal en esta carpeta y corré:
 
@@ -38,7 +37,7 @@
 ansible-playbook -i inventory.ini playbook.yml
 ```
 
-Ansible se va a conectar a todas las Pi listadas en el inventario, va a verificar qué falta instalar o actualizar, y lo va a hacer automáticamente. Si algo ya está instalado y bien configurado, no hace nada (es "idempotente").
+Ansible se va a conectar a la Pi listada en el inventario, va a verificar qué falta instalar o actualizar, y lo va a hacer automáticamente. Si algo ya está instalado y bien configurado, no hace nada (es "idempotente").
 
 ---
 

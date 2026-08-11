@@ -5,7 +5,7 @@ Este es el script que arranca el sistema completo.
 Es lo que systemd ejecuta cuando enciende la Raspberry Pi.
 
 Qué hace:
-  1. Carga la configuración del dispositivo (¿soy Voz A o Voz B?)
+  1. Carga la configuración del dispositivo
   2. Inicia el lector de sensores del Arduino (en hilo separado)
   3. Inicia el motor de audio (en hilo principal)
   4. Si algo falla, lo registra y permite que systemd reinicie el servicio

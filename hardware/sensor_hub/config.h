@@ -15,7 +15,6 @@
 // Los pines analógicos del Arduino Uno van de A0 a A5.
 // Cada sensor se conecta a un pin diferente.
 
-#define PIN_HUMEDAD      A0   // Sensor de humedad del suelo
 #define PIN_TEMPERATURA  A1   // Sensor de temperatura LM35
 #define PIN_LUZ          A2   // Fotoresistor (LDR) para luz ambiental
 
