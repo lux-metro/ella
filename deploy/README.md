@@ -27,10 +27,8 @@ Es un sistema que corrés en **tu computadora**, y que se conecta a la(s) Pi por
 
 ```bash
 # Instalación de la Raspberry Pi:
-curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
+curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
 ```
-
-> **IMPORTANTE:** Cambiá `TU_USUARIO` por tu usuario de GitHub. Si el repositorio es privado, vas a tener que clonarlo manualmente primero.
 
 **¿Qué hace el script exactamente?**
 - Actualiza el sistema operativo (`apt update`).
