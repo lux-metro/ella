@@ -116,10 +116,8 @@ Ahora que estás conectado a la Pi, el siguiente paso es correr el script de ins
 
 ```bash
 # En la terminal de la Pi, escribí:
-curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
+curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
 ```
-
-Reemplazá `TU_USUARIO` con tu usuario de GitHub.
 
 Si preferís clonar el repositorio primero:
 ```bash
