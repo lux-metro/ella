@@ -12,23 +12,22 @@ Es un solo comando que corrés **adentro** de la Raspberry Pi. Hace todo por vos
 
 ## Cómo usar el Provisioning Script
 
+Es un solo comando que corrés **adentro** de la Raspberry Pi. Hace todo por vos: instala las dependencias (incluido git si no está), clona el repositorio, configura el audio, habilita puertos y deja los servicios corriendo.
+
 1. Grabá la SD card, conectá la Pi a internet y entrá por SSH (ver `docs/01-raspberry-pi-setup.md`).
-2. **Cloná el repositorio completo** (el script necesita los servicios y el código del repo, no funciona descargado solo):
-3. Corré el script desde adentro del repositorio:
+2. Una vez adentro de la Pi, corré:
 
 ```bash
-# En la terminal de la Pi:
-git clone https://github.com/lux-metro/ella.git ~/ella/repo
-cd ~/ella/repo
-bash deploy/provision.sh
+# En la terminal de la Pi (hace todo solo):
+curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
 ```
 
-> **IMPORTANTE:** El repo oficial es **público** y el comando funciona tal cual. Si usás tu propio fork (público o privado), cambiá `lux-metro` por tu usuario de GitHub; para un repo privado cloná manualmente en `~/ella/repo`. No existe un "script suelto" que funcione sin el repo.
+> **IMPORTANTE:** El repo oficial es **público** y el comando funciona tal cual. Si usás tu propio fork (público o privado), cambiá `lux-metro` por tu usuario de GitHub. También podés clonar manualmente el repo en `~/ella/repo` y correr `bash deploy/provision.sh` desde adentro.
 
 **¿Qué hace el script exactamente?**
 - Actualiza el sistema operativo (`apt update`).
 - Instala Python, sox, git y herramientas necesarias.
-- Clona este repositorio en `~/ella/repo`.
+- Clona este repositorio en `~/ella/repo` (o usa el clon existente).
 - Crea un entorno virtual de Python único (`~/ella/repo/.venv`) e instala las dependencias del panel web y del motor de audio.
 - Pide las credenciales del Panel Web (usuario/contraseña) y las guarda en `pi/panel/.env`.
 - Da al usuario permisos sudo sin contraseña (`NOPASSWD: ALL`), necesarios para que el Panel Web pueda administrar la red, la hora y reiniciar el sistema.

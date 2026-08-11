@@ -48,18 +48,15 @@ ella/
 
 ## Setup rápido (si ya sabés lo que hacés)
 
-> ⚠️ **Primero cloná el repositorio completo.** El script usa archivos del repo (servicios systemd, panel web), así que NO funciona correrlo solo con `curl | bash`.
+Un solo comando en la Raspberry Pi después del primer arranque. El script instala git (si falta), clona el repositorio y configura todo solo:
 
 ```bash
-# En la Raspberry Pi, después del primer arranque:
-git clone https://github.com/lux-metro/ella.git ~/ella/repo
-cd ~/ella/repo
-bash deploy/provision.sh
+curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
 
 # Eso es todo. La Pi queda autónoma y arranca sola.
 ```
 
-> Si usás tu propio fork del repo (público o privado), cambiá `lux-metro` por tu usuario de GitHub.
+> Si usás tu propio fork del repo (público o privado), cambiá `lux-metro` por tu usuario de GitHub. También podés clonar el repo en `~/ella/repo` y correr `bash deploy/provision.sh` desde adentro.
 
 ---
 

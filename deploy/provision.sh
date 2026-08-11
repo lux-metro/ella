@@ -7,8 +7,11 @@
 # de Audio). El modo Access Point NO se activa acá: queda a pedido del
 # operador, desde el Panel Web o con pi/setup_pi_access_point.sh.
 #
-# Uso:
-#   git clone <URL_DEL_REPO> ~/ella/repo   # primero clonar el repo completo
+# Uso (una sola línea, hace todo: instala git, clona el repo y configura):
+#   curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision.sh | bash
+#
+# También podés clonar manualmente y correrlo:
+#   git clone https://github.com/lux-metro/ella.git ~/ella/repo
 #   cd ~/ella/repo
 #   bash deploy/provision.sh
 # ==============================================================================
@@ -56,22 +59,22 @@ if [ ! -f "$BASE_DIR/audio/silencio.wav" ]; then
     sox -n -r 44100 -c 2 "$BASE_DIR/audio/silencio.wav" trim 0.0 1.0
 fi
 
-if [ ! -d "$BASE_DIR/repo" ]; then
-    echo "Clonando repositorio en $BASE_DIR/repo..."
-    # Normalmente el usuario ya clonó el repo en ~/ella/repo (ver deploy/README.md).
-    # Si no, lo clonamos.
-    if [ -d "$(dirname "$0")/../.git" ]; then
-        # El script se está corriendo desde el repo clonado
-        REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-        echo "Usando repositorio existente en $REPO_DIR"
-    else
-        git clone "$REPO_URL" "$BASE_DIR/repo"
-        REPO_DIR="$BASE_DIR/repo"
-    fi
-else
+# Detectar el repositorio. El script puede correrse de dos formas:
+#   a) Con curl | bash (git ya se instaló en el paso 1): clonamos a ~/ella/repo.
+#   b) Desde un clon manual: usamos esa ubicación.
+# Se detecta con el marcador pi/services/panel.service (no con .git, porque
+# en el flujo curl|bash $0 es 'bash' y el chequeo de .git puede fallar).
+if [ -d "$BASE_DIR/repo/.git" ]; then
     echo "El repositorio ya existe. Actualizando código..."
     cd "$BASE_DIR/repo"
     git pull
+    REPO_DIR="$BASE_DIR/repo"
+elif [ -f "$(dirname "$0")/../pi/services/panel.service" ]; then
+    REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+    echo "Usando repositorio existente en $REPO_DIR"
+else
+    echo "Clonando repositorio en $BASE_DIR/repo..."
+    git clone "$REPO_URL" "$BASE_DIR/repo"
     REPO_DIR="$BASE_DIR/repo"
 fi
 
@@ -91,6 +94,11 @@ fi
 # y se guarda en ~/ella/credenciales_wifi.txt.
 
 if [ ! -f "$REPO_DIR/pi/panel/.env" ]; then
+    # Si vinimos por 'curl | bash', el stdin es la tubería y 'read' no lee del
+    # teclado. Redirigimos stdin a la terminal cuando no es una tty.
+    if [ ! -t 0 ]; then
+        exec < /dev/tty 2>/dev/null || true
+    fi
     echo ""
     echo "=========================================================="
     echo "🔐 SETUP DEL PANEL DE CONTROL WEB"
