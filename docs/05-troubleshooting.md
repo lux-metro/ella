@@ -6,15 +6,15 @@
 
 ## El servicio de audio no arranca
 
-**Síntoma:** `systemctl status ella-voice` muestra `failed` o `inactive`
+**Síntoma:** `systemctl --user status reproducir` muestra `failed` o `inactive`
 
 ```bash
 # Ver el error exacto:
-journalctl -u ella-voice -n 50 --no-pager
+journalctl --user -u reproducir -n 50 --no-pager
 
 # Intentar reiniciar manualmente:
-systemctl restart ella-voice
-systemctl status ella-voice
+systemctl --user restart reproducir
+systemctl --user status reproducir
 ```
 
 **Causas comunes:**
@@ -92,18 +92,65 @@ Posibles causas:
 
 ## El servicio se reinicia constantemente (crash loop)
 
-**Síntoma:** `systemctl status` muestra que reinició muchas veces
+**Síntoma:** `systemctl --user status reproducir` muestra que reinició muchas veces
 
 ```bash
 # Ver los últimos errores con timestamps:
-journalctl -u ella-voice --since "1 hour ago" --no-pager
+journalctl --user -u reproducir --since "1 hour ago" --no-pager
 
 # Correr el script manualmente para ver el error completo:
-cd ~/ella
-python3 pi/main.py
+cd ~/ella/repo
+.venv/bin/python pi/shared/main.py
 ```
 
 El error va a aparecer en la terminal y vas a poder entender qué falló.
+
+---
+
+## El panel web no está disponible
+
+**Síntoma:** no podés entrar a `http://<IP>:5000`
+
+Posibles causas y soluciones:
+
+1. **No sabés cuál es la IP de la Pi.** Desde la consola (SSH), buscá la IP local:
+   ```bash
+   hostname -I
+   ```
+   Si el Access Point está activo, la IP es fija: `192.168.4.1`.
+
+2. **El servicio del panel no está corriendo.**
+   ```bash
+   systemctl --user status panel
+   journalctl --user -u panel -n 50 --no-pager
+   ```
+
+3. **El Access Point está activo pero te conectaste a otra red.** Cuando el AP está activo, el panel solo se ve desde la red `InstalacionElla` (a menos que uses ethernet).
+
+4. **Cambiaste de modo (AP ↔ WiFi local) y no reconectaste.** Al activar o desactivar el AP, el navegador tiene que conectarse a la red correspondiente:
+   - AP activo → red `InstalacionElla`, panel en `192.168.4.1:5000`
+   - AP inactivo → tu WiFi local, panel en `http://<IP_DE_LA_PI>:5000`
+
+---
+
+## Activar / desactivar el Access Point
+
+**Activar** (modo aislado, para la sala de exposición):
+
+* Desde el Panel Web → sección **"Access Point"** → contraseña + *Activar Access Point*.
+* O por CLI: `bash ~/ella/repo/pi/setup_pi_access_point.sh`
+  (la contraseña se guarda en `~/ella/credenciales_wifi.txt`, mínimo 8 caracteres).
+
+**Desactivar** (volver a tu WiFi local):
+
+* Desde el Panel Web → **Zona de Peligro** (reinicia la Pi).
+* O por CLI: `bash ~/ella/repo/pi/revertir_wifi.sh`
+
+> El Access Point usa **NetworkManager** (nmcli). Para ver su estado:
+> ```bash
+> nmcli con show --active
+> ```
+> La red `InstalacionElla` debe figurar como activa cuando el AP está encendido.
 
 ---
 
@@ -147,19 +194,19 @@ last reboot | head -5
 
 ```bash
 # Ver estado del servicio:
-systemctl status ella-voice
+systemctl --user status reproducir
 
 # Reiniciar el servicio:
-systemctl restart ella-voice
+systemctl --user restart reproducir
 
 # Detener el servicio:
-systemctl stop ella-voice
+systemctl --user stop reproducir
 
 # Ver logs en tiempo real:
-journalctl -u ella-voice -f
+journalctl --user -u reproducir -f
 
 # Ver últimas 100 líneas de log:
-journalctl -u ella-voice -n 100 --no-pager
+journalctl --user -u reproducir -n 100 --no-pager
 
 # Reiniciar la Pi de forma segura:
 sudo shutdown -r now

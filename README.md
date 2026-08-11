@@ -50,7 +50,7 @@ ella/
 
 ```bash
 # En la Raspberry Pi, después del primer arranque:
-curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | VOICE=a bash
+curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
 
 # Eso es todo. La Pi queda autónoma y arranca sola.
 ```
@@ -61,18 +61,22 @@ curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provisio
 
 ## 🛜 Conectividad y Red (Importante)
 
-Una vez ejecutado el script de instalación (`provision.sh`), la Raspberry Pi **se desconectará del WiFi de tu casa y creará su propia red privada (Access Point)** llamada `InstalacionElla`. 
-A partir de este momento, **la Pi ya no tendrá acceso a Internet**, y servicios como Raspberry Pi Connect dejarán de funcionar.
+Después de ejecutar `provision.sh`, la Pi **se queda conectada a tu WiFi de la casa**. El modo Access Point **no se activa automáticamente**: es una opción que se activa a pedido (ideal para aislar la máquina cuando la instalación está montada en la sala de exposición).
 
-Para interactuar con la instalación:
-1. Conecta tu celular o computadora a la red WiFi `InstalacionElla`.
-2. Ingresa a `http://192.168.4.1:5000` en tu navegador para ver el **Panel de Control**.
-3. Si necesitas acceder a la consola, puedes hacer SSH apuntando a esa IP (`ssh tu_usuario@192.168.4.1`).
+El Access Point se hace con **NetworkManager** (nmcli) y se activa de dos formas:
+
+* **Desde el Panel Web:** sección **"Access Point"** → definís la contraseña y pulsás *Activar Access Point*. La Pi crea la red `InstalacionElla` y se desconecta de tu WiFi local.
+* **Por CLI (consola SSH):** `bash ~/ella/repo/pi/setup_pi_access_point.sh`
+
+Cuando el AP está activo:
+1. Conectá tu celular o computadora a la red WiFi `InstalacionElla`.
+2. Ingresá a `http://192.168.4.1:5000` en tu navegador para ver el **Panel de Control**.
+3. La Pi queda aislada (sin Internet). Para la consola: `ssh tu_usuario@192.168.4.1`.
 
 **¿Qué hago si necesito que la Pi vuelva a tener internet (ej: para hacer un update o un git pull)?**
 Tienes dos opciones:
 * **Fácil (Hardware):** Enchufarle un cable Ethernet directo al router. La Pi mantendrá el Access Point por WiFi pero obtendrá internet por el cable.
-* **Software:** Desde el Panel de Control Web, encontrarás abajo de todo una "Zona de Peligro". Allí puedes ordenar que se desactive el Access Point. La máquina se reiniciará y volverá a conectarse automáticamente a tu WiFi de la casa. Luego de actualizar, para volver a aislarla, deberás ejecutar `bash ~/ella/repo/pi/setup_pi_access_point.sh`.
+* **Software:** Desde el Panel Web, abajo de todo está la "Zona de Peligro". Allí puedes ordenar que se desactive el Access Point. La máquina se reiniciará y volverá a conectarse automáticamente a tu WiFi de la casa. También podés hacerlo por CLI: `bash ~/ella/repo/pi/revertir_wifi.sh`.
 
 ---
 
@@ -103,9 +107,10 @@ Tienes dos opciones:
 ## Estado del proyecto
 
 - [x] Prototipo bash (sox/play + Bluetooth) — `prototype/bash/`
-- [ ] Motor de audio Python + configuración por dispositivo
-- [ ] Comunicación Arduino → Raspberry Pi por UART
-- [ ] Deploy automatizado con Ansible
+- [x] Motor de audio Python + configuración por dispositivo — `pi/shared/` (corre como servicio `reproducir.service`)
+- [x] Comunicación Arduino → Raspberry Pi por UART — `serial_reader.py` + firmware `hardware/sensor_hub/`
+- [x] Deploy automatizado — `deploy/provision.sh` (y Ansible como flujo alternativo)
+- [x] Panel de control web + Access Point bajo demanda — `pi/panel/`
 - [ ] Pruebas de larga duración (72 hs continuas)
 
 ---

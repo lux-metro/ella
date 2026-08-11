@@ -42,6 +42,8 @@ Una sondita que medís la conductividad eléctrica de la arcilla. La arcilla hú
 | **Terminal / consola** | Pantalla de texto negro donde escribís comandos. No es peligroso: si escribís algo mal, el peor caso es que no pase nada. |
 | **SSH** | Forma de conectarte a la Raspberry Pi desde tu computadora usando texto, sin necesitar monitor ni teclado conectados a la Pi. |
 | **UART / serie** | Protocolo de comunicación: la forma en que el Arduino y la Raspberry Pi se hablan usando cables (no wifi). |
+| **Access Point** | Modo en el que la Raspberry Pi crea su propia red WiFi (en este proyecto se llama `InstalacionElla`). Se usa para aislar la máquina en la sala de exposición y entrar al panel desde `192.168.4.1:5000`. Se activa a pedido (panel web o CLI), no automáticamente. |
+| **NetworkManager** | El programa de Linux que gestiona las redes (WiFi, ethernet). En este proyecto se usa su herramienta `nmcli` para activar/desactivar el Access Point. |
 | **systemd** | El programa de Linux que arranca otros programas cuando enciende el sistema. Úsalo para que el audio arranque solo. |
 | **Ansible** | Herramienta que corre en tu computadora y configura la Raspberry Pi automáticamente por SSH. |
 | **firmware** | El programa que corre en el Arduino. A diferencia de un archivo común, se "graba" directamente en el chip. |

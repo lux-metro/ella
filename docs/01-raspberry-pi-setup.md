@@ -116,7 +116,7 @@ Ahora que estás conectado a la Pi, el siguiente paso es correr el script de ins
 
 ```bash
 # En la terminal de la Pi, escribí:
-curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | VOICE=a bash
+curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
 ```
 
 Reemplazá `TU_USUARIO` con tu usuario de GitHub.
@@ -125,7 +125,7 @@ Si preferís clonar el repositorio primero:
 ```bash
 git clone https://github.com/TU_USUARIO/ella.git
 cd ella
-VOICE=a bash deploy/provision.sh
+bash deploy/provision.sh
 ```
 
 ---
@@ -133,29 +133,29 @@ VOICE=a bash deploy/provision.sh
 ## Paso 6 — Verificar que todo funciona
 
 ```bash
-# Ver el estado del servicio de audio:
-systemctl status ella-voice
+# Ver el estado de los servicios (corren como servicios de usuario):
+systemctl --user status reproducir
+systemctl --user status panel
+systemctl --user status sentir-presencia
 
-# Ver los últimos logs (mensajes de error o actividad):
-journalctl -u ella-voice -n 50
+# Ver los últimos logs del motor de audio:
+journalctl --user -u reproducir -n 50
 
 # Ver logs en tiempo real (salir con Ctrl+C):
-journalctl -u ella-voice -f
+journalctl --user -u reproducir -f
 ```
 
-Si el servicio aparece como `active (running)`, todo está bien.
+Si el servicio aparece como `active (running)`, todo está bien. El Panel Web queda en `http://<IP_DE_LA_PI>:5000` (buscá la IP con `hostname -I`).
 
 ---
 
 ## Notas para cuando tengás la segunda Pi
 
-La segunda Pi se configura igual, pero con `VOICE=b` en lugar de `VOICE=a`:
+La segunda Pi se configura igual (con Raspberry Pi Imager, el hostname sería `ella-voz-b`):
 
 ```bash
-VOICE=b bash deploy/provision.sh
+curl -sSL https://raw.githubusercontent.com/TU_USUARIO/ella/main/deploy/provision.sh | bash
 ```
-
-Y en Raspberry Pi Imager, el hostname sería `ella-voz-b`.
 
 ---
 

@@ -39,3 +39,14 @@ ansible-playbook -i inventory.ini playbook.yml
 ```
 
 Ansible se va a conectar a todas las Pi listadas en el inventario, va a verificar qué falta instalar o actualizar, y lo va a hacer automáticamente. Si algo ya está instalado y bien configurado, no hace nada (es "idempotente").
+
+---
+
+## ⚠️ Importante: no mezclar con `provision.sh`
+
+`provision.sh` y Ansible son **flujos alternativos** de instalación:
+
+- **`provision.sh`** instala los servicios como *servicios de usuario* (`panel`, `reproducir`, `sentir-presencia`) y es el flujo recomendado.
+- **Ansible** instala el motor de audio como *servicio de sistema* (`ella-voice.service`).
+
+Si configurás una Pi con `provision.sh` y después corrés Ansible, vas a terminar con **dos motores de audio a la vez**. Elegí un solo flujo por máquina.

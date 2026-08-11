@@ -1,81 +1,82 @@
 #!/bin/bash
-# setup_pi_access_point.sh
-# Convierte la Raspberry Pi en su propio punto de acceso WiFi ("InstalacionElla").
-# La IP fija de la Pi será 192.168.4.1
+# ==============================================================================
+# setup_pi_access_point.sh — Activa el modo Access Point en la Raspberry Pi
+# ==============================================================================
+# Convierte la Raspberry Pi en su propia red WiFi "InstalacionElla" usando
+# NetworkManager (nmcli), el gestor de red predeterminado en Raspberry Pi OS
+# basado en Debian Trixie / Bookworm.
+#
+# La IP fija de la Pi será 192.168.4.1 y el panel web quedará en:
+#   http://192.168.4.1:5000
+#
+# La contraseña de la red se lee de ~/ella/credenciales_wifi.txt
+# (el Panel Web la crea al activar; también podés crearla a mano).
+#
+# Uso:
+#   bash setup_pi_access_point.sh
+# ==============================================================================
 
 set -e
 
-# Leer contraseña de credenciales_wifi.txt
-WIFI_CRED_FILE="$(dirname "$0")/../credenciales_wifi.txt"
+WIFI_CRED_FILE="$HOME/ella/credenciales_wifi.txt"
+SSID="InstalacionElla"
+CONN_NAME="InstalacionElla"
+
+# ------------------------------------------------------------------------------
+# Verificaciones previas
+# ------------------------------------------------------------------------------
 if [ ! -f "$WIFI_CRED_FILE" ]; then
-    echo "Error: No se encontró el archivo $WIFI_CRED_FILE"
-    echo "Por favor, crea el archivo con la contraseña del WiFi (ej: echo 'MiClaveSecreta' > credenciales_wifi.txt)"
+    echo "Error: No se encontró $WIFI_CRED_FILE"
+    echo "Creá el archivo con la contraseña del WiFi (mínimo 8 caracteres):"
+    echo "  echo 'MiClaveSecreta' > $WIFI_CRED_FILE"
     exit 1
 fi
 
 WIFI_PASSWORD=$(cat "$WIFI_CRED_FILE")
-
-echo "Configurando la Raspberry Pi como Access Point (InstalacionElla)..."
-
-# Instalar dependencias necesarias (hostapd y dnsmasq)
-sudo apt-get update
-sudo apt-get install -y hostapd dnsmasq
-
-# Detener los servicios mientras los configuramos
-sudo systemctl stop hostapd
-sudo systemctl stop dnsmasq
-
-# Configurar IP estática en dhcpcd
-sudo cp /etc/dhcpcd.conf /etc/dhcpcd.conf.backup
-if ! grep -q "interface wlan0" /etc/dhcpcd.conf; then
-    sudo tee -a /etc/dhcpcd.conf > /dev/null <<EOF
-interface wlan0
-    static ip_address=192.168.4.1/24
-    nohook wpa_supplicant
-EOF
+if [ ${#WIFI_PASSWORD} -lt 8 ]; then
+    echo "Error: la contraseña debe tener al menos 8 caracteres."
+    exit 1
 fi
 
-# Reiniciar dhcpcd
-sudo systemctl restart dhcpcd
+if ! nmcli -t -f RUNNING general status | grep -q "running"; then
+    echo "Error: NetworkManager no está corriendo. Verificá el sistema."
+    exit 1
+fi
 
-# Configurar hostapd (Access Point)
-sudo tee /etc/hostapd/hostapd.conf > /dev/null <<EOF
-interface=wlan0
-driver=nl80211
-ssid=InstalacionElla
-hw_mode=g
-channel=7
-wmm_enabled=0
-macaddr_acl=0
-auth_algs=1
-ignore_broadcast_ssid=0
-wpa=2
-wpa_passphrase=$WIFI_PASSWORD
-wpa_key_mgmt=WPA-PSK
-wpa_pairwise=TKIP
-rsn_pairwise=CCMP
-EOF
+echo "Activando Access Point '$SSID' con NetworkManager..."
 
-# Apuntar hostapd al archivo de configuración
-sudo sed -i 's|#DAEMON_CONF=""|DAEMON_CONF="/etc/hostapd/hostapd.conf"|g' /etc/default/hostapd
+# ------------------------------------------------------------------------------
+# Crear (o recrear) el perfil del Access Point
+# ------------------------------------------------------------------------------
+nmcli con delete "$CONN_NAME" 2>/dev/null || true
 
-# Configurar dnsmasq (DHCP Server)
-sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
-sudo tee /etc/dnsmasq.conf > /dev/null <<EOF
-interface=wlan0
-dhcp-range=192.168.4.2,192.168.4.20,255.255.255.0,24h
-EOF
+nmcli con add type wifi ifname wlan0 con-name "$CONN_NAME" ssid "$SSID"
+nmcli con modify "$CONN_NAME" 802-11-wireless.mode ap
+nmcli con modify "$CONN_NAME" wifi-sec.key-mgmt wpa-psk
+nmcli con modify "$CONN_NAME" wifi-sec.psk "$WIFI_PASSWORD"
+nmcli con modify "$CONN_NAME" ipv4.method shared
+nmcli con modify "$CONN_NAME" ipv4.addresses 192.168.4.1/24
+nmcli con modify "$CONN_NAME" ipv4.gateway ""
+nmcli con modify "$CONN_NAME" ipv6.method ignore
 
-# Iniciar y habilitar servicios
-sudo systemctl unmask hostapd
-sudo systemctl enable hostapd
-sudo systemctl start hostapd
+# Nota: dejamos autoconnect por defecto (activado) para que en la galería
+# el AP vuelva solo tras un corte de luz. Si querés que la Pi siempre arranque
+# conectada a tu WiFi local, desactivalo: nmcli con modify "$CONN_NAME" autoconnect no
 
-sudo systemctl enable dnsmasq
-sudo systemctl start dnsmasq
+nmcli con up "$CONN_NAME"
 
-echo "============================================="
-echo "Access Point configurado con éxito."
-echo "Red: InstalacionElla"
-echo "IP de la Raspberry Pi: 192.168.4.1"
-echo "============================================="
+# ------------------------------------------------------------------------------
+# Verificación
+# ------------------------------------------------------------------------------
+if nmcli -t -f NAME con show --active | grep -q "^$CONN_NAME$"; then
+    echo "============================================="
+    echo "✅ Access Point activado."
+    echo "Red WiFi: $SSID"
+    echo "IP de la Raspberry Pi: 192.168.4.1"
+    echo "Panel web: http://192.168.4.1:5000"
+    echo "============================================="
+else
+    echo "❌ El Access Point no quedó activo. Revisá:"
+    echo "   nmcli con show $CONN_NAME"
+    exit 1
+fi

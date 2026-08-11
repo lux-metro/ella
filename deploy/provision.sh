@@ -3,8 +3,9 @@
 # provision.sh — Script de instalación automatizada para Instalación Ella
 # ==============================================================================
 # Este script configura una Raspberry Pi OS desde cero para que corra
-# la instalación "Ella" de forma autónoma (incluyendo el Panel Web, 
-# el Access Point y el motor de Audio).
+# la instalación "Ella" de forma autónoma (Panel Web, servicios y motor
+# de Audio). El modo Access Point NO se activa acá: queda a pedido del
+# operador, desde el Panel Web o con pi/setup_pi_access_point.sh.
 #
 # Uso:
 #   bash provision.sh
@@ -33,9 +34,9 @@ sudo apt-get upgrade -y
 
 echo "--- Instalando dependencias ---"
 # sox, libsox-fmt-all: para el motor de audio
-# hostapd, dnsmasq: para el access point
+# network-manager: gestión de red (el Access Point se arma con nmcli)
 # python3-venv, pip, git: para el entorno
-sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl hostapd dnsmasq
+sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl network-manager
 
 # Asegurar pertenencia a grupos (dialout para UART, audio para sonido)
 sudo usermod -a -G dialout,audio "$PI_USER"
@@ -82,19 +83,9 @@ if [ ! -f "$BASE_DIR/config.env" ]; then
     echo "✅ Creado $BASE_DIR/config.env"
 fi
 
-if [ ! -f "$REPO_DIR/credenciales_wifi.txt" ]; then
-    echo ""
-    echo "=========================================================="
-    echo "🔑 SETUP DE RED WIFI (Access Point)"
-    echo "=========================================================="
-    read -p "Ingresá la contraseña para la red WiFi 'InstalacionElla' (min 8 caracteres): " WIFI_PASS
-    while [ ${#WIFI_PASS} -lt 8 ]; do
-        echo "La contraseña debe tener al menos 8 caracteres."
-        read -p "Ingresá la contraseña para el WiFi: " WIFI_PASS
-    done
-    echo "$WIFI_PASS" > "$REPO_DIR/credenciales_wifi.txt"
-    echo "✅ Contraseña WiFi guardada."
-fi
+# Nota: la contraseña de la red WiFi 'InstalacionElla' NO se pide acá.
+# Se define cuando se activa el Access Point (desde el Panel Web o por CLI),
+# y se guarda en ~/ella/credenciales_wifi.txt.
 
 if [ ! -f "$REPO_DIR/pi/panel/.env" ]; then
     echo ""
@@ -115,28 +106,29 @@ fi
 # ------------------------------------------------------------------------------
 # 4. Entorno de Python y Panel
 # ------------------------------------------------------------------------------
-echo "--- Configurando entorno Python para el Panel Web ---"
-cd "$REPO_DIR/pi/panel"
-python3 -m venv venv
-source venv/bin/activate
+echo "--- Configurando entorno Python (venv unificado) ---"
+cd "$REPO_DIR"
+python3 -m venv .venv
+source .venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r pi/panel/requirements.txt
+pip install -r pi/shared/requirements.txt
 deactivate
 cd "$REPO_DIR"
 
-# Modificar el ExecStart en panel.service para usar el venv
-sed -i "s|ExecStart=/usr/bin/env python3 app.py|ExecStart=$REPO_DIR/pi/panel/venv/bin/python3 app.py|g" "$REPO_DIR/pi/services/panel.service"
-
 # ------------------------------------------------------------------------------
-# 5. Permisos Sudoers (Hora)
+# 5. Permisos Sudoers (NOPASSWD)
 # ------------------------------------------------------------------------------
-echo "--- Configurando permisos Sudoers para la hora ---"
-SUDOERS_FILE="/tmp/panel-time"
-echo "$PI_USER ALL=(ALL) NOPASSWD: /bin/date" > "$SUDOERS_FILE"
+echo "--- Configurando permisos Sudoers (NOPASSWD) ---"
+# El panel web ejecuta comandos de sistema (red, hora, reinicio) desde un
+# servicio systemd sin terminal. NOPASSWD: ALL habilita esto en esta máquina
+# dedicada y aislada de la instalación.
+SUDOERS_FILE="/tmp/ella-sudoers"
+echo "$PI_USER ALL=(ALL) NOPASSWD: ALL" > "$SUDOERS_FILE"
 sudo chown root:root "$SUDOERS_FILE"
 sudo chmod 0440 "$SUDOERS_FILE"
-sudo mv "$SUDOERS_FILE" /etc/sudoers.d/panel-time
-echo "✅ Permisos sudoers para comando date configurados."
+sudo mv "$SUDOERS_FILE" /etc/sudoers.d/ella
+echo "✅ Permisos sudoers (NOPASSWD: ALL) configurados."
 
 # ------------------------------------------------------------------------------
 # 6. Servicios Systemd
@@ -145,9 +137,11 @@ echo "--- Instalando y Habilitando Servicios Systemd de Usuario ---"
 SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
 mkdir -p "$SYSTEMD_USER_DIR"
 
-cp "$REPO_DIR/pi/services/panel.service" "$SYSTEMD_USER_DIR/"
-cp "$REPO_DIR/pi/services/sentir-presencia.service" "$SYSTEMD_USER_DIR/"
-cp "$REPO_DIR/pi/services/reproducir.service" "$SYSTEMD_USER_DIR/"
+# Copiar los servicios reemplazando el path canónico %h/ella/repo por la
+# ubicación real del repositorio (soporta el flujo curl y el clon manual).
+for svc in panel reproducir sentir-presencia; do
+    sed -e "s|%h/ella/repo|$REPO_DIR|g" "$REPO_DIR/pi/services/$svc.service" > "$SYSTEMD_USER_DIR/$svc.service"
+done
 
 systemctl --user daemon-reload
 systemctl --user enable panel.service
@@ -158,18 +152,25 @@ systemctl --user enable reproducir.service
 sudo loginctl enable-linger $PI_USER
 
 # ------------------------------------------------------------------------------
-# 7. Punto de Acceso WiFi
+# 7. Access Point (OPCIONAL — no se activa acá)
 # ------------------------------------------------------------------------------
-echo "--- Configurando Punto de Acceso WiFi ---"
+echo "--- Access Point (opcional, no se activa automáticamente) ---"
 chmod +x "$REPO_DIR/pi/setup_pi_access_point.sh"
-bash "$REPO_DIR/pi/setup_pi_access_point.sh"
+chmod +x "$REPO_DIR/pi/revertir_wifi.sh"
+echo "El modo Access Point NO se activa durante la instalación."
+echo "Para activarlo cuando la instalación esté montada:"
+echo "  - Desde el Panel Web: sección 'Access Point'."
+echo "  - Por CLI: bash $REPO_DIR/pi/setup_pi_access_point.sh"
 
 # ------------------------------------------------------------------------------
 # 8. Watchdog (Opcional pero recomendado para instalaciones)
 # ------------------------------------------------------------------------------
 echo "--- Habilitando Watchdog (protección contra cuelgues) ---"
-if ! grep -q "dtparam=watchdog=on" /boot/config.txt; then
-    echo "dtparam=watchdog=on" | sudo tee -a /boot/config.txt
+# El path de config.txt cambió en Raspberry Pi OS moderno (Bookworm+)
+BOOT_CFG="/boot/config.txt"
+[ -f /boot/firmware/config.txt ] && BOOT_CFG="/boot/firmware/config.txt"
+if ! grep -q "dtparam=watchdog=on" "$BOOT_CFG"; then
+    echo "dtparam=watchdog=on" | sudo tee -a "$BOOT_CFG"
 fi
 sudo apt-get install -y watchdog
 sudo systemctl enable watchdog
@@ -180,9 +181,11 @@ echo "✅ Instalación completada exitosamente."
 echo "La Raspberry Pi se va a reiniciar en 10 segundos para aplicar los cambios."
 echo ""
 echo "Al arrancar:"
-echo " 1. Se levantará la red WiFi 'InstalacionElla'."
-echo " 2. Podrás acceder al panel en http://192.168.4.1:5000"
-echo " 3. Desde allí podrás vincular el parlante Bluetooth y gestionar el audio."
+echo " 1. La Pi se conectará a tu red WiFi local (el Access Point NO está activado)."
+echo " 2. Panel web: http://<IP_DE_LA_PI>:5000 (buscá la IP con: hostname -I)"
+echo " 3. Para activar el Access Point 'InstalacionElla': Panel Web → 'Access Point'"
+echo "    o por CLI: bash $REPO_DIR/pi/setup_pi_access_point.sh"
+echo " 4. Desde el panel podrás gestionar audio, Bluetooth y la hora."
 echo "========================================================================"
 
 sleep 10

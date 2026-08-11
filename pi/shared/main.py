@@ -11,11 +11,11 @@ Qué hace:
   4. Si algo falla, lo registra y permite que systemd reinicie el servicio
 
 Para correr manualmente (para testear):
-  cd /home/pi/ella
-  python3 pi/main.py
+  cd ~/ella/repo
+  .venv/bin/python pi/shared/main.py
 
 Para ver los logs cuando corre como servicio:
-  journalctl -u ella-voice -f
+  journalctl --user -u reproducir -f
 """
 
 import logging
@@ -37,7 +37,7 @@ from audio_engine import MotorDeAudio
 # Configuración del sistema de logs
 # =============================================================
 # Los logs se mandan a stdout, que systemd captura automáticamente.
-# Para verlos: journalctl -u ella-voice -f
+# Para verlos: journalctl --user -u reproducir -f
 
 logging.basicConfig(
     level=logging.INFO,

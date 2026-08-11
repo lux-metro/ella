@@ -257,10 +257,10 @@
                         <span class="status-badge {% if servicios.sentir_presencia == 'active' %}status-active{% else %}status-inactive{% endif %}">{{ servicios.sentir_presencia }}</span>
                     </div>
                     <div class="actions">
-                        <form method="POST" action="/restart/reproducir" style="flex:1;">
+                        <form method="POST" action="/reiniciar/reproducir" style="flex:1;">
                             <button type="submit" class="btn-outline">Reiniciar Audio</button>
                         </form>
-                        <form method="POST" action="/restart/sentir-presencia" style="flex:1;">
+                        <form method="POST" action="/reiniciar/sentir-presencia" style="flex:1;">
                             <button type="submit" class="btn-outline">Reiniciar Radar</button>
                         </form>
                     </div>
@@ -280,17 +280,17 @@
                 
                 <div class="card">
                     <h2>Bluetooth (Parlantes)</h2>
-                    <form method="POST" action="/bluetooth/scan" style="margin-bottom:1rem;">
+                    <form method="POST" action="/bluetooth/escanear" style="margin-bottom:1rem;">
                         <button type="submit" class="btn-outline">Escanear Dispositivos (5s)</button>
                     </form>
-                    <form method="POST" action="/bluetooth/disconnect" style="margin-bottom:1rem;">
+                    <form method="POST" action="/bluetooth/desvincular" style="margin-bottom:1rem;">
                         <div class="form-group">
                             <label>MAC para desconectar:</label>
                             <input type="text" name="mac" placeholder="Ej: FC:58:FA:9E:3F:CD">
                         </div>
                         <button type="submit" class="btn-danger">Desvincular</button>
                     </form>
-                    <form method="POST" action="/bluetooth/test">
+                    <form method="POST" action="/bluetooth/probar">
                         <button type="submit" class="btn-outline" style="border-color:var(--success-color); color:var(--success-color);">Probar Sonido</button>
                     </form>
                 </div>
@@ -348,13 +348,42 @@
                         (Recordá reiniciar los servicios para aplicar)
                     </p>
                 </form>
+                <div class="card">
+                    <h2>Access Point (Red WiFi)</h2>
+                    <div class="stat">
+                        <span class="stat-label">Perfil configurado:</span>
+                        <span class="status-badge {% if ap.configurado %}status-active{% else %}status-inactive{% endif %}">{{ 'Sí' if ap.configurado else 'No' }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Access Point activo:</span>
+                        <span class="status-badge {% if ap.activo %}status-active{% else %}status-inactive{% endif %}">{{ 'Activo' if ap.activo else 'Inactivo' }}</span>
+                    </div>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Al activarlo, la Pi crea su propia red WiFi <strong>InstalacionElla</strong>
+                        y <strong>se desconecta de tu WiFi local</strong>. Después entrá al panel desde
+                        <code>http://192.168.4.1:5000</code>.
+                    </p>
+                    {% if not ap.activo %}
+                    <form method="POST" action="/config/activar_ap">
+                        <div class="form-group">
+                            <label>Contraseña de la red InstalacionElla (mínimo 8 caracteres):</label>
+                            <input type="text" name="contrasena" minlength="8" required placeholder="Definí la contraseña del WiFi">
+                        </div>
+                        <button type="submit">Activar Access Point</button>
+                    </form>
+                    {% else %}
+                    <p style="font-size: 0.875rem; color: var(--success-color);">
+                        Ya estás en modo Access Point. Para volver a tu red local, usá la Zona de Peligro de abajo.
+                    </p>
+                    {% endif %}
+                </div>
                 <div class="card" style="border-color: var(--error-color);">
                     <h2 style="color: var(--error-color); border-bottom-color: rgba(239, 68, 68, 0.2);">Zona de Peligro (Red)</h2>
                     <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
                         Desactivar el Access Point devolverá el internet a la máquina conectándola a tu red local (útil para actualizaciones). 
                         <strong>El panel web dejará de estar disponible en 192.168.4.1 y la máquina se reiniciará.</strong>
                     </p>
-                    <form method="POST" action="/config/revert_wifi">
+                    <form method="POST" action="/config/revertir_wifi">
                         <div class="form-group">
                             <label>Para continuar, escribe exactamente "estoy muy seguro":</label>
                             <input type="text" name="seguridad" pattern="^estoy muy seguro$" title="Debes escribir exactamente 'estoy muy seguro' en minúsculas" required placeholder="estoy muy seguro">
