@@ -1,10 +1,6 @@
 # =============================================================
 # .gitignore — proyecto ella
 # =============================================================
-# Este archivo le dice a Git qué archivos NO guardar en el repo.
-# Normalmente son archivos temporales, contraseñas, o cosas
-# que cambian en cada computadora.
-# =============================================================
 
 # --- Python ---
 __pycache__/
@@ -26,7 +22,6 @@ env/
 logs/
 
 # --- Archivos de configuración local (contraseñas, IPs) ---
-# Si algún día tenés un archivo con datos sensibles, ponelo acá
 .env
 *.env
 secrets.yaml
