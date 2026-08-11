@@ -34,6 +34,9 @@ REPO_URL="https://github.com/lux-metro/ella.git"
 # 1. Actualización de sistema y dependencias
 # ------------------------------------------------------------------------------
 echo "--- Actualizando sistema y paquetes (esto puede tardar) ---"
+# Si una corrida anterior quedó interrumpida, dpkg puede estar a medio
+# configurar y bloquear apt. Lo dejamos consistente antes de seguir.
+sudo DEBIAN_FRONTEND=noninteractive dpkg --configure -a
 sudo apt-get update
 sudo apt-get upgrade -y
 
