@@ -34,15 +34,14 @@ bluetoothctl info <MAC>
 # Tiene que decir "Connected: yes". Si no, probá conectar:
 bluetoothctl connect <MAC>
 
-# 2. Verificar que PulseAudio esté corriendo:
-pactl info
+# 2. Verificar que PipeWire esté corriendo:
+wpctl status
 
 # 3. Verificar que el volumen del sink no esté en 0:
-pactl list short sinks
-pactl get-sink-volume <nombre_o_index>
+wpctl get-volume <ID_del_sink>
 
 # Subir el volumen del sink (ej: 85%):
-pactl set-sink-volume <nombre_o_index> 85%
+wpctl set-volume <ID_del_sink> 0.85
 
 # 4. Probar audio manualmente:
 play -n synth 3 sine 440

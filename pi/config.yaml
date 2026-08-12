@@ -20,8 +20,8 @@ voz: ella
 dispositivo_audio: "default"
 # El dispositivo de audio donde sale el sonido.
 # El motor reproduce con sox ('play'), que usa el dispositivo
-# por defecto de ALSA. Ese default se enruta (vía PulseAudio)
-# al parlante Bluetooth emparejado. No hace falta cambiarlo.
+# por defecto de ALSA. Ese default se enruta (vía PipeWire, compatible
+# con PulseAudio) al parlante Bluetooth emparejado. No hace falta cambiarlo.
 # Para ver qué dispositivos tenés, corré: aplay -l
 
 mac_parlante_bluetooth: ""

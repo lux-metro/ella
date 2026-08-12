@@ -91,7 +91,7 @@ Tienes dos opciones:
                     │       🎵 parlante Bluetooth     │
                     └─────────────────────────────────┘
                                    ▲
-                                   │ A2DP (PulseAudio)
+                                   │ A2DP (PipeWire)
                     ┌───────────────────────────────────┐
                     │        Raspberry Pi 3 (una)       │
                     │   audio_engine.py + sox/play      │

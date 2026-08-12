@@ -12,7 +12,7 @@ Raspberry Pi
    ↓
 ALSA (dispositivo por defecto)
    ↓
-PulseAudio (sink A2DP)
+PipeWire (sink A2DP)
    ↓
 Parlante Bluetooth (emparejado)
    ↓
@@ -53,8 +53,8 @@ exit
 # Ver que el parlante esté conectado (debe decir "Connected: yes"):
 bluetoothctl info <MAC>
 
-# Ver que PulseAudio esté corriendo y tenga el parlante como salida:
-pactl info
+# Ver que PipeWire esté corriendo y tenga el parlante como salida:
+wpctl status
 
 # Reproducir un tono de prueba (440 Hz, 3 segundos):
 play -n synth 3 sine 440
@@ -81,11 +81,11 @@ Reemplazá la MAC por la de tu parlante. Si la dejás vacía, el sistema usa el 
 El parlante tiene su propio volumen físico, pero también podés ajustarlo desde la Pi:
 
 ```bash
-# Listar los sinks de PulseAudio:
-pactl list short sinks
+# Listar los sinks de PipeWire (anotá el ID del parlante, en la sección "Audio"):
+wpctl status
 
 # Subir/bajar el volumen de un sink (ej: 85%):
-pactl set-sink-volume <nombre_o_index> 85%
+wpctl set-volume <ID_del_sink> 0.85
 
 # O con la interfaz de ALSA:
 alsamixer

@@ -25,7 +25,7 @@ curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision
 > **IMPORTANTE:** El repo oficial es **público** y el comando funciona tal cual. Si usás tu propio fork (público o privado), cambiá `lux-metro` por tu usuario de GitHub. También podés clonar manualmente el repo en `~/ella/repo` y correr `bash deploy/provision.sh` desde adentro.
 
 **¿Qué hace el script exactamente?**
-- Actualiza el sistema operativo (`apt update`).
+- Actualiza las listas de paquetes (`apt update`).
 - Instala Python, sox, git y herramientas necesarias.
 - Clona este repositorio en `~/ella/repo` (o usa el clon existente).
 - Crea un entorno virtual de Python único (`~/ella/repo/.venv`) e instala las dependencias del panel web y del motor de audio.

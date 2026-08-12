@@ -43,14 +43,15 @@ sudo DEBIAN_FRONTEND=noninteractive dpkg --configure -a
 # con: sudo apt-mark unhold rpi-connect rpi-connect-lite
 sudo apt-mark hold rpi-connect rpi-connect-lite 2>/dev/null || true
 sudo apt-get update
-sudo apt-get upgrade -y
 
 echo "--- Instalando dependencias ---"
 # sox, libsox-fmt-all: para el motor de audio
 # network-manager: gestión de red (el Access Point se arma con nmcli)
-# pulseaudio, pulseaudio-module-bluetooth: para la salida por parlante Bluetooth
+# pipewire-pulse, wireplumber, libspa-0.2-bluetooth: salida por parlante
+#   Bluetooth (compatible PulseAudio, sin dependencias X11)
+# bluez: emparejamiento Bluetooth (bluetoothctl)
 # python3-venv, pip, git: para el entorno
-sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl network-manager pulseaudio pulseaudio-module-bluetooth
+sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl network-manager bluez pipewire-pulse wireplumber libspa-0.2-bluetooth
 
 # Asegurar pertenencia a grupos (dialout para UART, audio para sonido)
 sudo usermod -a -G dialout,audio "$PI_USER"
