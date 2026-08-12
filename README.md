@@ -58,6 +58,8 @@ curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision
 
 > Si usás tu propio fork del repo (público o privado), cambiá `lux-metro` por tu usuario de GitHub. También podés clonar el repo en `~/ella/repo` y correr `bash deploy/provision.sh` desde adentro.
 
+> **Recomendado:** grabá la SD card con **Raspberry Pi OS Lite (64-bit)** como sistema base (ver `docs/01-raspberry-pi-setup.md`). La versión con escritorio trae software preinstalado que puede interferir con la instalación.
+
 ---
 
 ## 🛜 Conectividad y Red (Importante)

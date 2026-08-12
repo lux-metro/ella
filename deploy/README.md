@@ -14,7 +14,7 @@ Es un solo comando que corrés **adentro** de la Raspberry Pi. Hace todo por vos
 
 Es un solo comando que corrés **adentro** de la Raspberry Pi. Hace todo por vos: instala las dependencias (incluido git si no está), clona el repositorio, configura el audio, habilita puertos y deja los servicios corriendo.
 
-1. Grabá la SD card, conectá la Pi a internet y entrá por SSH (ver `docs/01-raspberry-pi-setup.md`).
+1. Grabá la SD card con **Raspberry Pi OS Lite (64-bit)** (recomendado: sin escritorio ni software preinstalado que pueda interferir), conectá la Pi a internet y entrá por SSH (ver `docs/01-raspberry-pi-setup.md`).
 2. Una vez adentro de la Pi, corré:
 
 ```bash

@@ -37,6 +37,11 @@ echo "--- Actualizando sistema y paquetes (esto puede tardar) ---"
 # Si una corrida anterior quedó interrumpida, dpkg puede estar a medio
 # configurar y bloquear apt. Lo dejamos consistente antes de seguir.
 sudo DEBIAN_FRONTEND=noninteractive dpkg --configure -a
+
+# rpi-connect (Raspberry Pi Connect) se congela: su postinst reinicia el
+# servicio y puede cortar la sesión a mitad de la instalación. Reversible
+# con: sudo apt-mark unhold rpi-connect rpi-connect-lite
+sudo apt-mark hold rpi-connect rpi-connect-lite 2>/dev/null || true
 sudo apt-get update
 sudo apt-get upgrade -y
 
