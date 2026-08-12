@@ -29,7 +29,7 @@ curl -sSL https://raw.githubusercontent.com/lux-metro/ella/main/deploy/provision
 - Instala Python, sox, git y herramientas necesarias.
 - Clona este repositorio en `~/ella/repo` (o usa el clon existente).
 - Crea un entorno virtual de Python único (`~/ella/repo/.venv`) e instala las dependencias del panel web y del motor de audio.
-- Pide las credenciales del Panel Web (usuario/contraseña) y las guarda en `pi/panel/.env`.
+- Genera las credenciales del Panel Web (usuario `ella`, contraseña aleatoria), las muestra en pantalla y las guarda en `~/ella/panel_credenciales.txt`.
 - Da al usuario permisos sudo sin contraseña (`NOPASSWD: ALL`), necesarios para que el Panel Web pueda administrar la red, la hora y reiniciar el sistema.
 - Instala los servicios systemd de usuario: `panel.service` (panel web), `reproducir.service` (motor de audio Python) y `sentir-presencia.service` (radar ESP32).
 - Configura el *hardware watchdog* (reinicia la Pi si se cuelga por completo).

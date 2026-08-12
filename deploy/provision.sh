@@ -90,7 +90,7 @@ fi
 cd "$REPO_DIR"
 
 # ------------------------------------------------------------------------------
-# 3. Configuraciones Base e Interacción de Credenciales
+# 3. Configuraciones Base y Credenciales
 # ------------------------------------------------------------------------------
 echo "--- Configurando variables de entorno y contraseñas ---"
 if [ ! -f "$BASE_DIR/config.env" ]; then
@@ -103,24 +103,20 @@ fi
 # y se guarda en ~/ella/credenciales_wifi.txt.
 
 if [ ! -f "$REPO_DIR/pi/panel/.env" ]; then
-    # Si vinimos por 'curl | bash', el stdin es la tubería y 'read' no lee del
-    # teclado. Redirigimos stdin a la terminal cuando no es una tty.
-    if [ ! -t 0 ]; then
-        exec < /dev/tty 2>/dev/null || true
-    fi
-    echo ""
-    echo "=========================================================="
-    echo "🔐 SETUP DEL PANEL DE CONTROL WEB"
-    echo "=========================================================="
-    read -p "Ingresá el NOMBRE DE USUARIO para acceder al panel: " PANEL_USER
-    read -sp "Ingresá la CONTRASEÑA para acceder al panel: " PANEL_PASS
-    echo ""
-    
+    echo "--- Generando credenciales del Panel Web ---"
+    PANEL_USER="ella"
+    PANEL_PASS=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 12)
     cat <<EOF > "$REPO_DIR/pi/panel/.env"
 PANEL_USER=$PANEL_USER
 PANEL_PASS=$PANEL_PASS
 EOF
-    echo "✅ Credenciales del panel web guardadas."
+    CREDS_FILE="$BASE_DIR/panel_credenciales.txt"
+    printf 'PANEL_USER=%s\nPANEL_PASS=%s\n' "$PANEL_USER" "$PANEL_PASS" > "$CREDS_FILE"
+    chmod 600 "$CREDS_FILE"
+    echo "✅ Credenciales del panel web generadas."
+    echo "   Usuario:     $PANEL_USER"
+    echo "   Contraseña:  $PANEL_PASS"
+    echo "   📄 Guardadas en: $CREDS_FILE (por si las olvidás)"
 fi
 
 # ------------------------------------------------------------------------------
@@ -207,6 +203,15 @@ echo " 3. Para activar el Access Point 'InstalacionElla': Panel Web → 'Access 
 echo "    o por CLI: bash $REPO_DIR/pi/setup_pi_access_point.sh"
 echo " 4. Desde el panel podrás gestionar audio, Bluetooth y la hora."
 echo "========================================================================"
+
+echo ""
+echo "🔐 Credenciales del Panel Web:"
+PANEL_USER=$(grep '^PANEL_USER=' "$REPO_DIR/pi/panel/.env" | cut -d= -f2- || true)
+PANEL_PASS=$(grep '^PANEL_PASS=' "$REPO_DIR/pi/panel/.env" | cut -d= -f2- || true)
+echo "   Usuario:     $PANEL_USER"
+echo "   Contraseña:  $PANEL_PASS"
+echo "   📄 Si las olvidás, están en: $BASE_DIR/panel_credenciales.txt"
+echo ""
 
 sleep 10
 sudo reboot
