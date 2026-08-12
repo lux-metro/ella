@@ -28,6 +28,10 @@ secrets.yaml
 credenciales_wifi.txt
 /tmp/*.txt
 
+# --- Sketch de test del radar WiFi (contiene credenciales locales) ---
+# Se mantiene solo en local; no se sube al repositorio público.
+tests/ESP32_c3_test_radar_rcwl0516/
+
 # --- Sistemas operativos ---
 .DS_Store           # Mac
 Thumbs.db           # Windows
