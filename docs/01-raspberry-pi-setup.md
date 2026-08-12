@@ -42,7 +42,7 @@ Con Raspberry Pi Imager abierto:
    
    > "Lite" significa sin interfaz gráfica — es lo que queremos. La Pi va a correr sin monitor.
    > **Recomendado:** usá siempre **Raspberry Pi OS Lite (64-bit)**. No trae escritorio ni
-   > software preinstalado (como Raspberry Pi Connect) que pueda interferir con la instalación de *ella*.
+   > software preinstalado que pueda interferir con la instalación de *ella*.
 
 3. **"Choose Storage"** → Elegí tu SD card
    
