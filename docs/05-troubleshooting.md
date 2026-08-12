@@ -155,7 +155,7 @@ Posibles causas y soluciones:
 
 **Desactivar** (volver a tu WiFi local):
 
-* Desde el Panel Web → **Zona de Peligro** (reinicia la Pi).
+* Desde el Panel Web → **Reset de access point (CUIDADO)** (reinicia la Pi).
 * O por CLI: `bash ~/ella/repo/pi/revertir_wifi.sh`
 
 > El Access Point usa **NetworkManager** (nmcli). Para ver su estado:

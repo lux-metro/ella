@@ -44,7 +44,7 @@ El modo Access Point (red WiFi propia `InstalacionElla`, IP `192.168.4.1`) **no 
 * **Desde el Panel Web:** sección **"Access Point"** → definís la contraseña y pulsás *Activar Access Point*.
 * **Por CLI:** `bash ~/ella/repo/pi/setup_pi_access_point.sh`
 
-Para desactivarlo: **Zona de Peligro** del Panel Web (reinicia la Pi) o `bash ~/ella/repo/pi/revertir_wifi.sh`. Ambos usan NetworkManager (nmcli).
+Para desactivarlo: sección **"Reset de access point (CUIDADO)"** del Panel Web (reinicia la Pi) o `bash ~/ella/repo/pi/revertir_wifi.sh`. Ambos usan NetworkManager (nmcli).
 
 ---
 

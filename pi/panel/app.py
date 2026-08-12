@@ -121,9 +121,14 @@ def inicio():
         'sentir_presencia': estado_servicio('sentir-presencia.service')
     }
 
+    # Hora vigente de la Raspberry (se muestra y pre-carga en el panel)
+    fecha_hora_pi = time.strftime('%Y-%m-%d %H:%M:%S')
+    hora_pi_input = time.strftime('%Y-%m-%dT%H:%M:%S')
+
     return render_template('index.html', config=config, presencia=presencia,
                            intensidad=intensidad, hace_cuanto=hace_cuanto,
-                           servicios=servicios, ap=estado_ap())
+                           servicios=servicios, ap=estado_ap(),
+                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input)
 
 @app.route('/config', methods=['POST'])
 @requiere_auth
@@ -157,6 +162,8 @@ def actualizar_hora():
     nueva_hora = request.form.get('hora')
     if nueva_hora:
         try:
+            # El input datetime-local envía 'YYYY-MM-DDTHH:MM:SS'
+            nueva_hora = nueva_hora.replace('T', ' ')
             subprocess.run(["sudo", "-n", "date", "-s", nueva_hora], check=True)
             flash("Hora actualizada exitosamente.", "success")
         except Exception as e:
