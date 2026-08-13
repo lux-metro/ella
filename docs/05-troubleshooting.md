@@ -86,6 +86,28 @@ sudo usermod -a -G dialout pi
 
 ---
 
+## El ESP32 no se conecta al WiFi (escanea las redes pero falla)
+
+**Síntoma:** El ESP32 escanea las redes con buen RSSI, pero la conexión siempre falla (el log del Arduino IDE muestra `Reason: 2 - AUTH_EXPIRE`), incluso contra redes abiertas sin contraseña.
+
+**Causa:** Falla conocida del front-end RF de algunos módulos ESP32-C3 Super Mini: a máxima potencia, la señal TX se refleja y se auto-cancela, y el AP no llega a decodificar las tramas (el scan, que solo recibe, sí funciona).
+
+**Solución:** en el sketch, inmediatamente después de `WiFi.begin(ssid, password)`:
+
+```cpp
+WiFi.setTxPower(WIFI_POWER_8_5dBm);
+```
+
+Y en `setup()`:
+
+```cpp
+WiFi.setSleep(false);
+```
+
+Si el módulo conecta y se comporta bien, se puede ir subiendo gradualmente la potencia para mejorar el alcance.
+
+---
+
 ## La Pi no arranca o se queda trabada
 
 **Síntoma:** La Pi no responde por SSH, LED de actividad no parpadea
