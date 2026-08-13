@@ -248,9 +248,11 @@ def escanear_bluetooth():
 
     # scan on con --timeout corta solo y devuelve un exit code confiable
     # (a diferencia del truco de matar el proceso por timeout).
+    # 12s: la resolución de nombres es asíncrona y con 5s muchos quedan sin
+    # resolver (solo muestran la MAC). Más tiempo = más nombres reales.
     scan = subprocess.run(
-        ["bluetoothctl", "--timeout", "5", "scan", "on"],
-        capture_output=True, text=True, timeout=20,
+        ["bluetoothctl", "--timeout", "12", "scan", "on"],
+        capture_output=True, text=True, timeout=30,
     )
     if scan.returncode != 0:
         detalle = scan.stderr.strip() or scan.stdout.strip()
@@ -274,18 +276,50 @@ def escanear_bluetooth():
             nombres_resueltos[m.group(1)] = m.group(2)
 
     res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
-    devices_html = "<ul>"
+    dispositivos = []
     for line in res.stdout.splitlines():
         if line.startswith("Device "):
             parts = line.split(" ", 2)
             if len(parts) >= 3:
-                mac, name = parts[1], parts[2]
-                nombre = nombres_resueltos.get(mac, name)
-                devices_html += f"<li>{html.escape(nombre)} ({mac}) - <form style='display:inline' method='POST' action='/bluetooth/conectar'><input type='hidden' name='mac' value='{mac}'><button type='submit'>Conectar</button></form></li>"
+                dispositivos.append((parts[1], parts[2]))
+
+    # La resolución de nombres es asíncrona: leer la propiedad Name (bluetoothctl
+    # info) dispara una petición de nombre al dispositivo. La forzamos para los
+    # que aún no la resolvieron y releemos después de una pausa.
+    pendientes = [mac for mac, alias in dispositivos if mac not in nombres_resueltos]
+    for mac in pendientes:
+        try:
+            subprocess.run(
+                ["bluetoothctl", "info", mac],
+                capture_output=True, text=True, timeout=5,
+            )
+        except Exception:
+            pass
+    if pendientes:
+        time.sleep(2)
+    for mac in pendientes:
+        try:
+            info = subprocess.run(
+                ["bluetoothctl", "info", mac],
+                capture_output=True, text=True, timeout=5,
+            ).stdout
+            for linea in info.splitlines():
+                if linea.startswith("Name:"):
+                    nombre = linea.split(":", 1)[1].strip()
+                    if nombre:
+                        nombres_resueltos[mac] = nombre
+                    break
+        except Exception:
+            pass
+
+    devices_html = "<ul>"
+    for mac, alias in dispositivos:
+        nombre = nombres_resueltos.get(mac, alias)
+        devices_html += f"<li>{html.escape(nombre)} ({mac}) - <form style='display:inline' method='POST' action='/bluetooth/conectar'><input type='hidden' name='mac' value='{mac}'><button type='submit'>Conectar</button></form></li>"
     devices_html += "</ul>"
 
     if devices_html == "<ul></ul>":
-        flash("No se encontraron dispositivos Bluetooth en 5s. Verificá que el parlante esté encendido y en modo descubrible/pareado.", "info")
+        flash("No se encontraron dispositivos Bluetooth en 12s. Verificá que el parlante esté encendido y en modo descubrible/pareado.", "info")
     else:
         flash(f"Dispositivos encontrados:<br>{devices_html}", "info")
     return redirect(url_for('inicio'))

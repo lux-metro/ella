@@ -64,9 +64,9 @@ play -n synth 3 sine 440
 
 ## El escaneo de Bluetooth no encuentra dispositivos
 
-**Síntoma:** En el Panel Web, *Escanear Dispositivos* devuelve enseguida "No se encontraron dispositivos" (sin esperar los 5 s) o el error "Failed to start discovery: NotReady".
+**Síntoma:** En el Panel Web, *Escanear Dispositivos* devuelve enseguida "No se encontraron dispositivos" (sin esperar los 12 s) o el error "Failed to start discovery: NotReady".
 
-**Causa más común:** el adaptador Bluetooth quedó **bloqueado por software** (rfkill) y/o **apagado**. Un scan real tarda 5 s; si el mensaje aparece al instante, el escaneo no arrancó.
+**Causa más común:** el adaptador Bluetooth quedó **bloqueado por software** (rfkill) y/o **apagado**. Un scan real tarda 12 s; si el mensaje aparece al instante, el escaneo no arrancó.
 
 ```bash
 # Verificar el estado del adaptador:
