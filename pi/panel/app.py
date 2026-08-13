@@ -375,15 +375,64 @@ def _escaneo_bluetooth_worker():
             _bt_estado['activo'] = False
             _bt_estado['ts'] = time.time()
 
+def _fusionar_devices():
+    """Lista los dispositivos conocidos por el adaptador.
+
+    Es la fuente confiable de tiempo real: 'bluetoothctl devices' refleja los
+    descubrimientos apenas pasan (a diferencia de parsear el stdout del scan,
+    que bluetoothctl bufferéa y suelta recién al terminar). También arrastra
+    los nombres a medida que se resuelven (el alias se actualiza solo).
+    """
+    try:
+        res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
+    except Exception:
+        return
+    with _bt_lock:
+        for line in res.stdout.splitlines():
+            if not line.startswith("Device "):
+                continue
+            parts = line.split(" ", 2)
+            if len(parts) < 3:
+                continue
+            mac, alias = parts[1], parts[2]
+            actual = _bt_estado['dispositivos'].get(mac)
+            if actual is None:
+                _bt_estado['dispositivos'][mac] = alias
+            elif _nombre_parece_mac(actual, mac):
+                _bt_estado['dispositivos'][mac] = alias
+
+def _leer_salida_scan(proc, error_holder):
+    """Hilo lector del stdout del scan.
+
+    Fast path (si stdbuf logra line-bufferear, los [NEW]/[CHG] se ven al
+    instante) y captura de errores tipo "Failed to start discovery".
+    """
+    patron_nuevo = re.compile(r"\[NEW\] Device\s+([0-9A-F:]{17})\s+(.+)")
+    patron_nombre = re.compile(r"\[CHG\] Device ([0-9A-F:]{17}) Name: (.+)")
+    try:
+        for linea in proc.stdout:
+            texto = linea.strip()
+            if ("Failed" in texto or "Error" in texto) and not error_holder['linea']:
+                error_holder['linea'] = texto
+            m = patron_nuevo.match(texto)
+            if m:
+                with _bt_lock:
+                    _bt_estado['dispositivos'].setdefault(m.group(1), m.group(2))
+                continue
+            m = patron_nombre.match(texto)
+            if m:
+                with _bt_lock:
+                    _bt_estado['dispositivos'][m.group(1)] = m.group(2)
+    except Exception:
+        pass
+
 def _escaneo_bluetooth_worker_inner():
     global _bt_proc
     encender_bluetooth()
 
-    # stdbuf -oL fuerza el buffer de línea del bluetoothctl para que los
-    # [NEW]/[CHG] lleguen en vivo y no cuando se llene el buffer del pipe.
-    # Ojo: en modo one-shot, "scan on" SIN "--timeout" retorna apenas imprime
-    # "Discovery started"; por eso se usa --timeout (igual al auto-stop), que
-    # bloquea ese tiempo y va streameando los dispositivos.
+    # En modo one-shot, "scan on" SIN "--timeout" retorna apenas imprime
+    # "Discovery started": el --timeout (igual al auto-stop) mantiene el scan
+    # vivo y lo corta solo si el usuario no lo detiene antes.
     cmd = ["stdbuf", "-oL", "bluetoothctl", "--timeout", str(BLUETOOTH_SCAN_MAX_SEG), "scan", "on"]
     try:
         proc = subprocess.Popen(
@@ -410,39 +459,35 @@ def _escaneo_bluetooth_worker_inner():
     timer.daemon = True
     timer.start()
 
-    patron_nuevo = re.compile(r"\[NEW\] Device\s+([0-9A-F:]{17})\s+(.+)")
-    patron_nombre = re.compile(r"\[CHG\] Device ([0-9A-F:]{17}) Name: (.+)")
-    error_salida = ""
+    error_holder = {'linea': ''}
+    reader = threading.Thread(
+        target=_leer_salida_scan, args=(proc, error_holder), daemon=True
+    )
+    reader.start()
+
+    # Mientras el scan siga vivo, fusionamos los dispositivos conocidos cada
+    # segundo: es lo que hace que se vean aparecer en tiempo real.
     try:
-        for linea in proc.stdout:
-            texto = linea.strip()
-            if "Failed" in texto or "Error" in texto:
-                if not error_salida:
-                    error_salida = texto
-            m = patron_nuevo.match(texto)
-            if m:
-                with _bt_lock:
-                    _bt_estado['dispositivos'].setdefault(m.group(1), m.group(2))
-                continue
-            m = patron_nombre.match(texto)
-            if m:
-                with _bt_lock:
-                    _bt_estado['dispositivos'][m.group(1)] = m.group(2)
-    except Exception:
-        pass
+        while proc.poll() is None:
+            _fusionar_devices()
+            time.sleep(1)
     finally:
         try:
             proc.wait(timeout=5)
         except Exception:
-            pass
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        reader.join(timeout=5)
         _bt_proc = None
         timer.cancel()
 
     # Pasada final de resolución de nombres con el scan ya detenido.
     _finalizar_nombres()
     with _bt_lock:
-        if error_salida and not _bt_estado['dispositivos']:
-            _bt_estado['error'] = error_salida
+        if error_holder['linea'] and not _bt_estado['dispositivos']:
+            _bt_estado['error'] = error_holder['linea']
         _bt_estado['activo'] = False
         _bt_estado['ts'] = time.time()
 

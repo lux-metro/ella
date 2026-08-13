@@ -64,7 +64,7 @@ play -n synth 3 sine 440
 
 ## El escaneo de Bluetooth no encuentra dispositivos
 
-**Síntoma:** En el Panel Web, *Escanear Dispositivos* queda "Escaneando…" pero no aparece ningún dispositivo (o el estado muestra el error "Failed to start discovery: NotReady").
+**Síntoma:** En el Panel Web, *Escanear dispositivos* queda "Escaneando…" pero no aparece ningún dispositivo (o el estado muestra el error "Failed to start discovery: NotReady").
 
 **Causa más común:** el adaptador Bluetooth quedó **bloqueado por software** (rfkill) y/o **apagado**. El scan es interactivo: corre hasta que lo detenés (o hasta el auto-stop de 60 s). Si pasan varios segundos sin que aparezca ningún `[NEW]`, el escaneo probablemente no arrancó.
 

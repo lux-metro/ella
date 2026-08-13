@@ -392,7 +392,7 @@
                 <div class="card">
                     <h2>Bluetooth (Parlantes)</h2>
                     <div class="bt-toolbar">
-                        <button type="button" id="bt-btn-scan" class="btn-outline" onclick="iniciarEscaneo()">Escanear Dispositivos</button>
+                        <button type="button" id="bt-btn-scan" class="btn-outline" onclick="iniciarEscaneo()">Escanear dispositivos</button>
                         <span id="bt-estado" class="bt-estado"></span>
                     </div>
                     <div id="bt-lista-container" class="bt-list" hidden>
@@ -555,19 +555,19 @@
             var cont = document.getElementById('bt-lista-container');
 
             if (btActivo) {
-                btn.textContent = 'Detener Escaneo';
+                btn.textContent = 'Detener escaneo';
                 btn.onclick = detenerEscaneo;
                 estado.className = 'bt-estado scaneando';
                 estado.innerHTML = '<span class="spinner"></span>Escaneando…';
             } else {
-                btn.textContent = 'Escanear Dispositivos';
+                btn.textContent = 'Escanear dispositivos';
                 btn.onclick = iniciarEscaneo;
                 if (btError) {
                     estado.className = 'bt-estado error';
                     estado.textContent = btError;
                 } else if (btTs > 0 && total === 0) {
                     estado.className = 'bt-estado';
-                    estado.textContent = 'Scan finalizado sin dispositivos. Verificá que el parlante esté encendido y en modo emparejamiento.';
+                    estado.textContent = 'Escaneo finalizado sin dispositivos. Verificá que el parlante esté encendido y en modo emparejamiento.';
                 } else {
                     estado.className = 'bt-estado';
                     estado.textContent = '';
