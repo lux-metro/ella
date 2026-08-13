@@ -57,6 +57,29 @@ sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-uti
 sudo usermod -a -G dialout,audio "$PI_USER"
 
 # ------------------------------------------------------------------------------
+# 1.4 PipeWire headless (A2DP Bluetooth sin sesión gráfica)
+# ------------------------------------------------------------------------------
+# El monitor bluez de WirePlumber por defecto solo expone los dispositivos
+# Bluetooth en el "seat activo" de logind. En esta instalación headless
+# (SSH, sin sesión gráfica) no hay seat activo, así que el perfil A2DP nunca
+# se registra y 'bluetoothctl connect' falla con
+# "br-connection-profile-unavailable" (y wpctl status no muestra la tarjeta).
+# Desactivamos el seat-monitoring para que el A2DP esté siempre disponible.
+WIREPLUMBER_CONF_DIR="$HOME/.config/wireplumber/wireplumber.conf.d"
+mkdir -p "$WIREPLUMBER_CONF_DIR"
+if ! grep -q "seat-monitoring" "$WIREPLUMBER_CONF_DIR/51-disable-seat-monitoring.conf" 2>/dev/null; then
+    cat > "$WIREPLUMBER_CONF_DIR/51-disable-seat-monitoring.conf" <<'EOF'
+wireplumber.profiles = {
+  main = {
+    monitor.bluez.seat-monitoring = disabled
+  }
+}
+EOF
+fi
+# Aplicar ya si WirePlumber está corriendo (si no, aplica tras el reboot).
+systemctl --user restart wireplumber 2>/dev/null || true
+
+# ------------------------------------------------------------------------------
 # 1.5 Bluetooth (operación desatendida)
 # ------------------------------------------------------------------------------
 echo "--- Configurando Bluetooth (desbloqueo automático) ---"

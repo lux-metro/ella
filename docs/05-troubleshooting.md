@@ -62,6 +62,32 @@ play -n synth 3 sine 440
 
 ---
 
+## "Conectar" falla con `br-connection-profile-unavailable`
+
+**Síntoma:** Al pulsar *Conectar* en el Panel Web (o `bluetoothctl connect <MAC>`) sale `Failed to connect: org.bluez.Error.Failed br-connection-profile-unavailable`, y `wpctl status` no muestra ninguna tarjeta bluetooth.
+
+**Causa:** En instalaciones **headless** (sin sesión gráfica, p. ej. solo por SSH), el monitor bluez de WirePlumber por defecto solo registra los perfiles de audio Bluetooth en el *seat activo* de logind. Sin seat activo, el perfil **A2DP nunca se registra** y la conexión falla con ese error.
+
+**Solución:** desactivar el seat-monitoring de WirePlumber:
+
+```bash
+mkdir -p ~/.config/wireplumber/wireplumber.conf.d
+cat > ~/.config/wireplumber/wireplumber.conf.d/51-disable-seat-monitoring.conf << 'EOF'
+wireplumber.profiles = {
+  main = {
+    monitor.bluez.seat-monitoring = disabled
+  }
+}
+EOF
+systemctl --user restart wireplumber
+```
+
+Luego reintentá *Conectar* desde el Panel. Para verificar que quedó bien, `wpctl status` debería mostrar el parlante como dispositivo/sink bluez cuando esté conectado.
+
+> `deploy/provision.sh` ya genera esta configuración en instalaciones nuevas.
+
+---
+
 ## El escaneo de Bluetooth no encuentra dispositivos
 
 **Síntoma:** En el Panel Web, *Escanear dispositivos* queda "Escaneando…" pero no aparece ningún dispositivo (o el estado muestra el error "Failed to start discovery: NotReady").
