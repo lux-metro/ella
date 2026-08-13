@@ -281,11 +281,32 @@ class MotorDeAudio:
         logger.info(
             f"Parlante Bluetooth no conectado. Intentando conectar {mac}..."
         )
+        # El adaptador puede estar recién arrancando (depende de la timing de
+        # ella-bluetooth.service en el boot): lo encendemos por las dudas.
+        try:
+            subprocess.run(
+                ['bluetoothctl', 'power', 'on'],
+                capture_output=True, text=True, timeout=10,
+            )
+        except Exception:
+            pass
+
+        # Tras un reinicio de la Pi, el parlante suele quedar sin vínculo
+        # ('Paired: no'), así que repetimos el flujo del Panel Web:
+        # pair (sin exigir éxito) → trust → connect.
         for intento in range(1, 6):
             try:
                 subprocess.run(
+                    ['bluetoothctl', 'pair', mac],
+                    capture_output=True, text=True, timeout=20,
+                )
+                subprocess.run(
+                    ['bluetoothctl', 'trust', mac],
+                    capture_output=True, text=True, timeout=10,
+                )
+                subprocess.run(
                     ['bluetoothctl', 'connect', mac],
-                    capture_output=True, text=True, timeout=15,
+                    capture_output=True, text=True, timeout=20,
                 )
             except Exception as e:
                 logger.warning(
