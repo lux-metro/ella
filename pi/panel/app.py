@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
+import html
 import os
+import re
 import subprocess
 import time
 from functools import wraps
@@ -255,6 +257,22 @@ def escanear_bluetooth():
         flash(f"Error al escanear Bluetooth: {detalle or 'bluetoothctl no disponible'}", "error")
         return redirect(url_for('inicio'))
 
+    # La salida del scan incluye la resolución de nombres ("[CHG] Device
+    # <MAC> Name: <nombre>"), que el listado posterior ("bluetoothctl devices")
+    # todavía no refleja: muestra el alias, que si el nombre no se resolvió es
+    # el MAC con guiones. Parseamos esos nombres para mostrar el real.
+    nombres_resueltos = {}
+    patron_nuevo = re.compile(r"NEW Device\s+([0-9A-F:]{17})\s+(.+)")
+    patron_nombre = re.compile(r"\[CHG\] Device ([0-9A-F:]{17}) Name: (.+)")
+    for linea in scan.stdout.splitlines():
+        m = patron_nuevo.match(linea.strip())
+        if m:
+            nombres_resueltos.setdefault(m.group(1), m.group(2))
+            continue
+        m = patron_nombre.match(linea.strip())
+        if m:
+            nombres_resueltos[m.group(1)] = m.group(2)
+
     res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
     devices_html = "<ul>"
     for line in res.stdout.splitlines():
@@ -262,7 +280,8 @@ def escanear_bluetooth():
             parts = line.split(" ", 2)
             if len(parts) >= 3:
                 mac, name = parts[1], parts[2]
-                devices_html += f"<li>{name} ({mac}) - <form style='display:inline' method='POST' action='/bluetooth/conectar'><input type='hidden' name='mac' value='{mac}'><button type='submit'>Conectar</button></form></li>"
+                nombre = nombres_resueltos.get(mac, name)
+                devices_html += f"<li>{html.escape(nombre)} ({mac}) - <form style='display:inline' method='POST' action='/bluetooth/conectar'><input type='hidden' name='mac' value='{mac}'><button type='submit'>Conectar</button></form></li>"
     devices_html += "</ul>"
 
     if devices_html == "<ul></ul>":
