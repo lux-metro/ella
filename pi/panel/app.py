@@ -495,14 +495,37 @@ def _escaneo_bluetooth_worker_inner():
 @requiere_auth
 def conectar_bluetooth():
     mac = request.form.get('mac')
-    if mac:
-        try:
-            subprocess.run(["bluetoothctl", "pair", mac], check=False)
-            subprocess.run(["bluetoothctl", "trust", mac], check=True)
-            subprocess.run(["bluetoothctl", "connect", mac], check=True)
+    if not mac:
+        flash("Falta la MAC del dispositivo.", "error")
+        return redirect(url_for('inicio'))
+
+    # Conectarse con el scan activo compite por el adaptador: el connect suele
+    # colgar o fallar. Cortamos el scan y dejamos que bluetoothd suelte el
+    # discovery antes de intentar el par.
+    _detener_scan_proceso()
+    time.sleep(1)
+
+    try:
+        subprocess.run(
+            ["bluetoothctl", "pair", mac],
+            capture_output=True, text=True, timeout=20,
+        )
+        subprocess.run(
+            ["bluetoothctl", "trust", mac],
+            capture_output=True, text=True, timeout=10,
+        )
+        conn = subprocess.run(
+            ["bluetoothctl", "connect", mac],
+            capture_output=True, text=True, timeout=20,
+        )
+        if conn.returncode != 0:
+            detalle = (conn.stderr.strip() or conn.stdout.strip()
+                       or "sin detalles. Verificá que el parlante esté encendido y en modo emparejamiento.")
+            flash(f"Error conectando a {mac}: {detalle}", "error")
+        else:
             flash(f"Conectado exitosamente a {mac}.", "success")
-        except Exception as e:
-            flash(f"Error conectando a {mac}: {e}", "error")
+    except Exception as e:
+        flash(f"Error conectando a {mac}: {e}", "error")
     return redirect(url_for('inicio'))
 
 @app.route('/bluetooth/desvincular', methods=['POST'])
