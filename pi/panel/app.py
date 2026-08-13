@@ -330,20 +330,20 @@ def escanear_bluetooth():
         except Exception:
             pass
 
-    dispositivos = []
+    dispositivos_con_nombre = []
     for mac, alias in dispositivos:
         nombre = nombres_resueltos.get(mac, alias)
-        dispositivos.append((mac, nombre))
+        dispositivos_con_nombre.append((mac, nombre))
 
-    BLUETOOTH_SCAN_CACHE['dispositivos'] = dispositivos
+    BLUETOOTH_SCAN_CACHE['dispositivos'] = dispositivos_con_nombre
     BLUETOOTH_SCAN_CACHE['ts'] = time.time()
 
-    if not dispositivos:
+    if not dispositivos_con_nombre:
         flash("No se encontraron dispositivos Bluetooth en 12s. Verificá que el parlante esté encendido y en modo descubrible/pareado.", "info")
     else:
-        paginas = (len(dispositivos) + BLUETOOTH_POR_PAGINA - 1) // BLUETOOTH_POR_PAGINA
+        paginas = (len(dispositivos_con_nombre) + BLUETOOTH_POR_PAGINA - 1) // BLUETOOTH_POR_PAGINA
         plural = "" if paginas == 1 else f" ({paginas} páginas)"
-        flash(f"Se encontraron {len(dispositivos)} dispositivo(s) Bluetooth{plural}.", "info")
+        flash(f"Se encontraron {len(dispositivos_con_nombre)} dispositivo(s) Bluetooth{plural}.", "info")
     return redirect(url_for('inicio'))
 
 @app.route('/bluetooth/conectar', methods=['POST'])
