@@ -24,9 +24,12 @@ DIR_PANEL = os.path.dirname(os.path.abspath(__file__))
 SCRIPT_ACTIVAR_AP = os.path.join(DIR_PANEL, '..', 'setup_pi_access_point.sh')
 SCRIPT_REVERTIR_WIFI = os.path.join(DIR_PANEL, '..', 'revertir_wifi.sh')
 
-# La MAC del parlante configurado vive en pi/config.yaml (la lee el motor de
-# audio). El panel la usa para mostrar el estado y poder desconectar el
-# parlante con un click.
+# La MAC del parlante configurado la guarda el panel FUERA del repo, en
+# ~/ella/bluetooth_mac.txt, para que los 'git pull' nunca choquen con un
+# archivo trackeado. El motor de audio (audio_engine.py) lee ese archivo con
+# prioridad sobre 'mac_parlante_bluetooth' en pi/config.yaml.
+MAC_PARLANTE_FILE = os.path.expanduser("~/ella/bluetooth_mac.txt")
+# La MAC en pi/config.yaml queda como fallback (config manual).
 CONFIG_YAML = os.path.join(DIR_PANEL, '..', 'config.yaml')
 
 NOMBRE_AP = "InstalacionElla"
@@ -110,44 +113,42 @@ def estado_ap():
         pass
     return {'configurado': configurado, 'activo': activo}
 
+def _mac_valida(mac):
+    return bool(re.match(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$', mac or ''))
+
 def mac_parlante_configurado():
-    """Lee la MAC del parlante definida en pi/config.yaml (sin depender de PyYAML)."""
+    """MAC del parlante configurado: prioridad a ~/ella/bluetooth_mac.txt y,
+    como fallback, a 'mac_parlante_bluetooth' de pi/config.yaml."""
+    try:
+        with open(MAC_PARLANTE_FILE) as f:
+            mac = f.read().strip()
+        if _mac_valida(mac):
+            return mac
+    except Exception:
+        pass
     try:
         with open(CONFIG_YAML) as f:
             for linea in f:
                 if linea.strip().startswith('mac_parlante_bluetooth:'):
                     valor = linea.split(':', 1)[1].strip().strip('"\'')
-                    if re.match(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$', valor):
+                    if _mac_valida(valor):
                         return valor
     except Exception:
         pass
     return ''
 
 def guardar_mac_parlante(mac):
-    """Escribe 'mac_parlante_bluetooth' en pi/config.yaml conservando el resto.
+    """Guarda la MAC del parlante en ~/ella/bluetooth_mac.txt (fuera del repo).
 
     Es lo que hace permanente la conexión: el motor de audio (audio_engine.py)
-    lee esta clave al arrancar y reconecta el parlante solo tras un reinicio.
+    lee este archivo al arrancar y reconecta el parlante solo tras un reinicio.
+    Guardarlo fuera del repo evita que un 'git pull' choque con config.yaml.
     """
+    mac = mac.strip()
     try:
-        with open(CONFIG_YAML) as f:
-            lineas = f.readlines()
-    except FileNotFoundError:
-        lineas = []
-    if not mac:
-        lineas = [l for l in lineas if not l.strip().startswith('mac_parlante_bluetooth:')]
-    else:
-        escrito = False
-        for i, l in enumerate(lineas):
-            if l.strip().startswith('mac_parlante_bluetooth:'):
-                lineas[i] = f'mac_parlante_bluetooth: "{mac}"\n'
-                escrito = True
-                break
-        if not escrito:
-            lineas.append(f'mac_parlante_bluetooth: "{mac}"\n')
-    try:
-        with open(CONFIG_YAML, 'w') as f:
-            f.writelines(lineas)
+        os.makedirs(os.path.dirname(MAC_PARLANTE_FILE), exist_ok=True)
+        with open(MAC_PARLANTE_FILE, 'w') as f:
+            f.write((mac + '\n') if _mac_valida(mac) else '')
     except Exception:
         pass
 

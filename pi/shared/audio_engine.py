@@ -12,8 +12,10 @@ subprocess. Esto es consistente con el prototipo bash original y
 es muy robusto: si una reproducción falla, simplemente pasa a la siguiente.
 
 La salida de audio es un parlante Bluetooth emparejado con la Pi.
-Si 'mac_parlante_bluetooth' está definida en config.yaml, el motor
-verifica la conexión antes de reproducir y la restablece si hace falta.
+Si hay una MAC configurada (en ~/ella/bluetooth_mac.txt, escrita por el
+Panel Web al conectar, o como fallback en 'mac_parlante_bluetooth' de
+config.yaml), el motor verifica la conexión antes de reproducir y la
+restablece si hace falta.
 
 Uso:
     from audio_engine import MotorDeAudio
@@ -25,6 +27,7 @@ import logging
 import math
 import os
 import random
+import re
 import subprocess
 import time
 
@@ -230,18 +233,35 @@ class MotorDeAudio:
         except Exception:
             return None
 
+    def _mac_parlante(self) -> str:
+        """
+        MAC del parlante configurado.
+
+        Prioridad a ~/ella/bluetooth_mac.txt (lo escribe el Panel Web al
+        conectar, y vive FUERA del repo para no chocar con los 'git pull').
+        Como fallback, 'mac_parlante_bluetooth' de config.yaml (config manual).
+        """
+        try:
+            with open(os.path.expanduser("~/ella/bluetooth_mac.txt")) as f:
+                mac = f.read().strip()
+            if re.fullmatch(r'([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}', mac):
+                return mac
+        except Exception:
+            pass
+        return self.config.get('mac_parlante_bluetooth', '').strip()
+
     def _asegurar_conexion_bluetooth(self) -> bool:
         """
         Verifica que el parlante Bluetooth esté conectado y, si no,
         intenta reconectarlo (patrón del prototipo bash).
 
-        Solo actúa si config.yaml tiene definida 'mac_parlante_bluetooth'.
+        Solo actúa si hay una MAC configurada (archivo runtime o config.yaml).
         Si la conexión falla, el audio saldrá por el dispositivo por defecto.
 
         Retorna:
             True si el parlante está conectado (o no hay MAC configurada).
         """
-        mac = self.config.get('mac_parlante_bluetooth', '').strip()
+        mac = self._mac_parlante()
         if not mac:
             return True
 

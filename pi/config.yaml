@@ -28,6 +28,9 @@ mac_parlante_bluetooth: ""
 # MAC del parlante Bluetooth (ej: "FC:58:FA:9E:3F:CD").
 # Si está definida, el motor intenta reconectarlo automáticamente
 # antes de reproducir (útil tras un reinicio de la Pi).
+# NOTA: al conectar desde el Panel Web, la MAC se guarda en
+# ~/ella/bluetooth_mac.txt (fuera del repo, para que los git pull no
+# choquen) y ese archivo tiene prioridad sobre esta clave.
 # Dejalo vacío si usás otra salida de audio.
 # Podés emparejar el parlante desde el Panel Web (card Bluetooth).
 

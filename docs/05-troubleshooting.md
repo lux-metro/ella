@@ -47,7 +47,7 @@ wpctl set-volume <ID_del_sink> 0.85
 play -n synth 3 sine 440
 ```
 
-> El motor de audio intenta reconectar el parlante automáticamente antes de reproducir, **solo si** `mac_parlante_bluetooth` está definida en `pi/config.yaml`. Verificá que esté cargada.
+> El motor de audio intenta reconectar el parlante automáticamente antes de reproducir, **solo si** hay una MAC configurada: en `~/ella/bluetooth_mac.txt` (la escribe el Panel Web al conectar) o, como fallback, en `mac_parlante_bluetooth` de `pi/config.yaml`. El archivo runtime tiene prioridad.
 
 ---
 
@@ -56,7 +56,7 @@ play -n synth 3 sine 440
 **Síntoma:** Tras un reinicio de la Pi, el audio no sale (el parlante quedó desconectado).
 
 1. Verificá que el parlante esté encendido y cargado.
-2. Desde el Panel Web → **"Bluetooth (Parlantes)"** → *Escanear* y *Conectar* para re-emparejarlo. Al conectar, el panel guarda la MAC en `pi/config.yaml` automáticamente.
+2. Desde el Panel Web → **"Bluetooth (Parlantes)"** → *Escanear* y *Conectar* para re-emparejarlo. Al conectar, el panel guarda la MAC en `~/ella/bluetooth_mac.txt` automáticamente.
 3. Verificá que quedó configurado: en la card Bluetooth debe aparecer la sección **"Parlante configurado"** con tu dispositivo y su estado.
 4. Reiniciá el servicio: `systemctl --user restart reproducir`
 

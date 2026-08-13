@@ -66,15 +66,21 @@ Si escuchás el tono por el parlante Bluetooth, todo está bien. ✅
 
 ## Paso 3 — Configurar el parlante en *ella*
 
-Para que el motor de audio reconecte el parlante automáticamente (por ejemplo tras un reinicio de la Pi), completá `pi/config.yaml`:
+Para que el motor de audio reconecte el parlante automáticamente (por ejemplo tras un reinicio de la Pi), la MAC tiene que quedar guardada.
+
+**Desde el Panel Web (recomendado):** al pulsar *Conectar* en un dispositivo del escaneo, el panel guarda la MAC automáticamente en `~/ella/bluetooth_mac.txt` (y reinicia el servicio de audio para que tome efecto). Esa conexión queda configurada como permanente.
+
+> 📄 El archivo vive **fuera del repositorio**, igual que `config.env`: así un `git pull` en la Pi nunca entra en conflicto con la MAC configurada desde el panel.
+
+**Por consola (opcional):** si preferís configurarlo a mano, editá `pi/config.yaml`:
 
 ```yaml
 mac_parlante_bluetooth: "FC:58:FA:9E:3F:CD"
 ```
 
-> 💡 **Desde el Panel Web no hace falta editar nada:** al pulsar *Conectar* en un dispositivo del escaneo, el panel guarda la MAC automáticamente en `pi/config.yaml` (y reinicia el servicio de audio para que tome efecto). Esa conexión queda configurada como permanente.
+> El archivo `~/ella/bluetooth_mac.txt` tiene **prioridad** sobre `pi/config.yaml`. Si los dos tienen MAC, gana el archivo runtime.
 
-Reemplazá la MAC por la de tu parlante. Si la dejás vacía, el sistema usa el dispositivo de audio por defecto sin intentar reconectar.
+Si no hay ninguna MAC configurada, el sistema usa el dispositivo de audio por defecto sin intentar reconectar.
 
 ---
 
