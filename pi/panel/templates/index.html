@@ -426,9 +426,8 @@
                     </div>
                     {% else %}
                     <p style="font-size:0.875rem; color:var(--text-secondary); margin-top:1rem;">
-                        Sin parlante configurado. Para que la Pi se reconecte sola tras un
-                        reinicio, definí <code>mac_parlante_bluetooth</code> en
-                        <code>pi/config.yaml</code>.
+                        Sin parlante configurado. Escaneá, conectá tu parlante y queda
+                        configurado automáticamente para reconectarse solo tras un reinicio.
                     </p>
                     {% endif %}
                     <form method="POST" action="/bluetooth/desvincular" style="margin-top:1rem; margin-bottom:1rem;">

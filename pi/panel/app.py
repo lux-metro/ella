@@ -123,6 +123,34 @@ def mac_parlante_configurado():
         pass
     return ''
 
+def guardar_mac_parlante(mac):
+    """Escribe 'mac_parlante_bluetooth' en pi/config.yaml conservando el resto.
+
+    Es lo que hace permanente la conexión: el motor de audio (audio_engine.py)
+    lee esta clave al arrancar y reconecta el parlante solo tras un reinicio.
+    """
+    try:
+        with open(CONFIG_YAML) as f:
+            lineas = f.readlines()
+    except FileNotFoundError:
+        lineas = []
+    if not mac:
+        lineas = [l for l in lineas if not l.strip().startswith('mac_parlante_bluetooth:')]
+    else:
+        escrito = False
+        for i, l in enumerate(lineas):
+            if l.strip().startswith('mac_parlante_bluetooth:'):
+                lineas[i] = f'mac_parlante_bluetooth: "{mac}"\n'
+                escrito = True
+                break
+        if not escrito:
+            lineas.append(f'mac_parlante_bluetooth: "{mac}"\n')
+    try:
+        with open(CONFIG_YAML, 'w') as f:
+            f.writelines(lineas)
+    except Exception:
+        pass
+
 def info_dispositivo(mac):
     """Consulta 'bluetoothctl info <mac>' y devuelve (nombre, conectado)."""
     try:
@@ -565,7 +593,15 @@ def conectar_bluetooth():
                        or "sin detalles. Verificá que el parlante esté encendido y en modo emparejamiento.")
             flash(f"Error conectando a {mac}: {detalle}", "error")
         else:
-            flash(f"Conectado exitosamente a {mac}.", "success")
+            # Conexión permanente: guardamos la MAC en config.yaml para que el
+            # motor de audio la reconecte sola tras un reinicio.
+            guardar_mac_parlante(mac)
+            try:
+                subprocess.run(["systemctl", "--user", "restart", "reproducir.service"],
+                               capture_output=True, timeout=30, check=True)
+            except Exception:
+                pass  # Si el servicio no está corriendo, toma efecto en el próximo arranque.
+            flash(f"Conectado exitosamente a {mac}. Queda configurado para reconectarse solo.", "success")
     except Exception as e:
         flash(f"Error conectando a {mac}: {e}", "error")
     return redirect(url_for('inicio'))
