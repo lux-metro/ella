@@ -288,11 +288,6 @@ def activar_ap():
 @app.route('/config/revertir_wifi', methods=['POST'])
 @requiere_auth
 def revertir_wifi():
-    seguridad = request.form.get('seguridad', '')
-    if seguridad.strip() != "estoy muy seguro":
-        flash("Mecanismo de seguridad fallido. Debes escribir exactamente la frase solicitada.", "error")
-        return redirect(url_for('inicio'))
-
     if not os.path.exists(SCRIPT_REVERTIR_WIFI):
         flash("No se encontró el script revertir_wifi.sh.", "error")
         return redirect(url_for('inicio'))
@@ -303,6 +298,17 @@ def revertir_wifi():
         return "El Access Point se está desactivando y la máquina se reiniciará en unos segundos. Ya puedes cerrar esta ventana."
     except Exception as e:
         flash(f"Error ejecutando script: {e}", "error")
+        return redirect(url_for('inicio'))
+
+@app.route('/config/reboot', methods=['POST'])
+@requiere_auth
+def reiniciar_pi():
+    try:
+        # En background: el panel muere con el reboot, la respuesta sale antes.
+        subprocess.Popen("sleep 2 && sudo -n reboot", shell=True)
+        return "La Raspberry Pi se está reiniciando. El panel volverá en unos 30 segundos."
+    except Exception as e:
+        flash(f"Error al reiniciar: {e}", "error")
         return redirect(url_for('inicio'))
 
 

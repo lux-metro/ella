@@ -79,7 +79,7 @@ Cuando el AP está activo:
 **¿Qué hago si necesito que la Pi vuelva a tener internet (ej: para hacer un update o un git pull)?**
 Tienes dos opciones:
 * **Fácil (Hardware):** Enchufarle un cable Ethernet directo al router. La Pi mantendrá el Access Point por WiFi pero obtendrá internet por el cable.
-* **Software:** Desde el Panel Web, abajo de todo está la sección "Reset de access point (CUIDADO)". Allí puedes ordenar que se desactive el Access Point. La máquina se reiniciará y volverá a conectarse automáticamente a tu WiFi de la casa. También podés hacerlo por CLI: `bash ~/ella/repo/pi/revertir_wifi.sh`.
+* **Software:** Desde el Panel Web, en la sección **"Zona de peligro"** (abajo de todo). Allí podés ordenar que se desactive el Access Point (la máquina se reiniciará y volverá a conectarse automáticamente a tu WiFi de la casa) o reiniciar la Raspberry. También podés hacerlo por CLI: `bash ~/ella/repo/pi/revertir_wifi.sh`.
 
 ---
 

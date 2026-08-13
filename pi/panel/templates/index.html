@@ -520,22 +520,29 @@
                     </form>
                     {% else %}
                     <p style="font-size: 0.875rem; color: var(--success-color);">
-                        Ya estás en modo Access Point. Para volver a tu red local, usá "Reset de access point (CUIDADO)" de abajo.
+                        Ya estás en modo Access Point. Para volver a tu red local, usá la sección "Zona de peligro" de abajo.
                     </p>
                     {% endif %}
                 </div>
                 <div class="card" style="border-color: var(--error-color);">
-                    <h2 style="color: var(--error-color); border-bottom-color: rgba(239, 68, 68, 0.2);">Reset de access point (CUIDADO)</h2>
+                    <h2 style="color: var(--error-color); border-bottom-color: rgba(239, 68, 68, 0.2);">Zona de peligro</h2>
                     <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
-                        Desactivar el Access Point permitirá acceso a internet desde esta Raspberry conectándola a tu red local (útil para actualizaciones). 
-                        <strong>El panel web dejará de estar disponible en 192.168.4.1 y la máquina se reiniciará.</strong>
+                        Acciones que interrumpen la instalación. El navegador te va a pedir confirmación.
                     </p>
-                    <form method="POST" action="/config/revertir_wifi">
-                        <div class="form-group">
-                            <label>Para continuar, escribe exactamente "estoy muy seguro":</label>
-                            <input type="text" name="seguridad" pattern="^estoy muy seguro$" title="Debes escribir exactamente 'estoy muy seguro' en minúsculas" required placeholder="estoy muy seguro">
-                        </div>
-                        <button type="submit" class="btn-danger">Continuar</button>
+                    <h3 style="font-size:1rem; margin-bottom:0.5rem;">Desactivar Access Point</h3>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Vuelve a tu red local (acceso a internet). <strong>El panel web dejará de estar disponible
+                        en 192.168.4.1 y la máquina se reiniciará.</strong>
+                    </p>
+                    <form method="POST" action="/config/revertir_wifi" onsubmit="return confirm('¿Desactivar el Access Point y volver a tu red local? La máquina se reiniciará.');">
+                        <button type="submit" class="btn-danger">Desactivar Access Point</button>
+                    </form>
+                    <h3 style="font-size:1rem; margin:1.5rem 0 0.5rem;">Reiniciar Raspberry Pi</h3>
+                    <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        Reinicia la máquina completa. <strong>El panel quedará offline por unos 30 segundos.</strong>
+                    </p>
+                    <form method="POST" action="/config/reboot" onsubmit="return confirm('¿Reiniciar la Raspberry Pi? El panel quedará offline por unos 30 segundos.');">
+                        <button type="submit" class="btn-danger">Reiniciar Raspberry Pi</button>
                     </form>
                 </div>
             </div>
