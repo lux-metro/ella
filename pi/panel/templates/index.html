@@ -219,10 +219,40 @@
             margin: 0 0 0.75rem;
             color: var(--text-secondary);
         }
-        .bt-list-meta {
-            font-size: 0.8rem;
-            opacity: 0.7;
-            margin-left: 0.5rem;
+        .bt-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .bt-toolbar button {
+            width: auto;
+            flex-shrink: 0;
+        }
+        .bt-estado {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            min-height: 1.2rem;
+        }
+        .bt-estado.scaneando {
+            color: var(--warning-color);
+        }
+        .bt-estado.error {
+            color: var(--error-color);
+        }
+        .bt-estado .spinner {
+            display: inline-block;
+            width: 0.85rem;
+            height: 0.85rem;
+            margin-right: 0.4rem;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--warning-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: -0.1rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
         .bt-list ul {
             list-style: none;
@@ -264,24 +294,23 @@
             margin-top: 1rem;
             flex-wrap: wrap;
         }
-        .pagination a {
+        .pagination button {
+            width: auto;
             padding: 0.3rem 0.7rem;
             border: 1px solid var(--accent-color);
             border-radius: 5px;
             color: var(--accent-color);
-            text-decoration: none;
+            background-color: transparent;
             font-size: 0.85rem;
             transition: background-color 0.2s;
         }
-        .pagination a:hover {
+        .pagination button:hover {
             background-color: rgba(99, 102, 241, 0.1);
         }
-        .page-current {
-            padding: 0.3rem 0.7rem;
+        .pagination .page-current {
             background-color: var(--accent-color);
             color: white;
-            border-radius: 5px;
-            font-size: 0.85rem;
+            border-color: var(--accent-color);
             font-weight: 500;
         }
     </style>
@@ -362,10 +391,16 @@
                 
                 <div class="card">
                     <h2>Bluetooth (Parlantes)</h2>
-                    <form method="POST" action="/bluetooth/escanear" style="margin-bottom:1rem;">
-                        <button type="submit" class="btn-outline">Escanear Dispositivos (12s)</button>
-                    </form>
-                    <form method="POST" action="/bluetooth/desvincular" style="margin-bottom:1rem;">
+                    <div class="bt-toolbar">
+                        <button type="button" id="bt-btn-scan" class="btn-outline" onclick="iniciarEscaneo()">Escanear Dispositivos</button>
+                        <span id="bt-estado" class="bt-estado"></span>
+                    </div>
+                    <div id="bt-lista-container" class="bt-list" hidden>
+                        <h3>Dispositivos encontrados <span id="bt-total"></span></h3>
+                        <ul id="bt-lista"></ul>
+                        <div id="bt-paginador" class="pagination"></div>
+                    </div>
+                    <form method="POST" action="/bluetooth/desvincular" style="margin-top:1rem; margin-bottom:1rem;">
                         <div class="form-group">
                             <label>MAC para desconectar:</label>
                             <input type="text" name="mac" placeholder="Ej: FC:58:FA:9E:3F:CD">
@@ -375,44 +410,6 @@
                     <form method="POST" action="/bluetooth/probar">
                         <button type="submit" class="btn-outline" style="border-color:var(--success-color); color:var(--success-color);">Probar Sonido</button>
                     </form>
-
-                    {% if dispositivos_bt %}
-                    <div class="bt-list">
-                        <h3>Dispositivos encontrados
-                            {% if total_bt %}({{ total_bt }}){% endif %}
-                            {% if hace_cuanto_bt %}<span class="bt-list-meta">{{ hace_cuanto_bt }}</span>{% endif %}
-                        </h3>
-                        <ul>
-                            {% for mac, nombre in dispositivos_bt %}
-                            <li>
-                                <span class="bt-device">{{ nombre }}</span>
-                                <span class="bt-mac">{{ mac }}</span>
-                                <form style="display:inline;" method="POST" action="/bluetooth/conectar">
-                                    <input type="hidden" name="mac" value="{{ mac }}">
-                                    <button type="submit" class="btn-outline bt-connect">Conectar</button>
-                                </form>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% if paginas_bt > 1 %}
-                        <div class="pagination">
-                            {% if pagina_bt > 1 %}
-                            <a href="?pag={{ pagina_bt - 1 }}">‹ Anterior</a>
-                            {% endif %}
-                            {% for p in range(1, paginas_bt + 1) %}
-                                {% if p == pagina_bt %}
-                                <span class="page-current">{{ p }}</span>
-                                {% else %}
-                                <a href="?pag={{ p }}">{{ p }}</a>
-                                {% endif %}
-                            {% endfor %}
-                            {% if pagina_bt < paginas_bt %}
-                            <a href="?pag={{ pagina_bt + 1 }}">Siguiente ›</a>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -521,6 +518,124 @@
             var local = new Date(ahora.getTime() - offset);
             document.querySelector('input[name="hora"]').value = local.toISOString().slice(0, 19);
         });
+
+        // ---- Escaneo Bluetooth interactivo ----
+        var btDevices = [];
+        var btActivo = false;
+        var btError = '';
+        var btPagina = 1;
+        var BT_POR_PAGINA = 8;
+        var BT_POLL_MS = 1500;
+
+        function iniciarEscaneo() {
+            fetch('/bluetooth/escanear', {method: 'POST'}).then(function() { pollBt(); });
+        }
+
+        function detenerEscaneo() {
+            fetch('/bluetooth/detener', {method: 'POST'}).then(function() { pollBt(); });
+        }
+
+        function pollBt() {
+            fetch('/bluetooth/estado')
+                .then(function(r) { return r.json(); })
+                .then(function(estado) {
+                    btActivo = estado.activo;
+                    btError = estado.error || '';
+                    btDevices = estado.dispositivos || [];
+                    renderBt();
+                })
+                .catch(function() {});
+        }
+
+        function renderBt() {
+            var btn = document.getElementById('bt-btn-scan');
+            var estado = document.getElementById('bt-estado');
+            var cont = document.getElementById('bt-lista-container');
+
+            if (btActivo) {
+                btn.textContent = 'Detener Escaneo';
+                btn.onclick = detenerEscaneo;
+                estado.className = 'bt-estado scaneando';
+                estado.innerHTML = '<span class="spinner"></span>Escaneando…';
+            } else {
+                btn.textContent = 'Escanear Dispositivos';
+                btn.onclick = iniciarEscaneo;
+                estado.className = 'bt-estado';
+                estado.textContent = btError ? btError : '';
+                if (btError) estado.className = 'bt-estado error';
+            }
+
+            var total = btDevices.length;
+            document.getElementById('bt-total').textContent = total ? '(' + total + ')' : '';
+            cont.hidden = total === 0;
+
+            var paginas = Math.max(1, Math.ceil(total / BT_POR_PAGINA));
+            if (btPagina > paginas) btPagina = paginas;
+            if (btPagina < 1) btPagina = 1;
+            var desde = (btPagina - 1) * BT_POR_PAGINA;
+            var items = btDevices.slice(desde, desde + BT_POR_PAGINA);
+
+            var lista = document.getElementById('bt-lista');
+            lista.innerHTML = '';
+            items.forEach(function(d) {
+                var li = document.createElement('li');
+
+                var nom = document.createElement('span');
+                nom.className = 'bt-device';
+                nom.textContent = d.nombre;
+
+                var mac = document.createElement('span');
+                mac.className = 'bt-mac';
+                mac.textContent = d.mac;
+
+                var f = document.createElement('form');
+                f.style.display = 'inline';
+                f.method = 'POST';
+                f.action = '/bluetooth/conectar';
+                var hi = document.createElement('input');
+                hi.type = 'hidden';
+                hi.name = 'mac';
+                hi.value = d.mac;
+                var b = document.createElement('button');
+                b.type = 'submit';
+                b.className = 'btn-outline bt-connect';
+                b.textContent = 'Conectar';
+                f.appendChild(hi);
+                f.appendChild(b);
+
+                li.appendChild(nom);
+                li.appendChild(mac);
+                li.appendChild(f);
+                lista.appendChild(li);
+            });
+
+            var pag = document.getElementById('bt-paginador');
+            pag.innerHTML = '';
+            if (paginas > 1) {
+                if (btPagina > 1) {
+                    pag.appendChild(crearPagBtn('‹ Anterior', btPagina - 1));
+                }
+                for (var p = 1; p <= paginas; p++) {
+                    var pb = crearPagBtn(String(p), p);
+                    if (p === btPagina) pb.className = 'page-current';
+                    pag.appendChild(pb);
+                }
+                if (btPagina < paginas) {
+                    pag.appendChild(crearPagBtn('Siguiente ›', btPagina + 1));
+                }
+            }
+        }
+
+        function crearPagBtn(label, num) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = label;
+            b.onclick = function() { btPagina = num; renderBt(); };
+            return b;
+        }
+
+        pollBt();
+        setInterval(pollBt, BT_POLL_MS);
     </script>
 </body>
 </html>

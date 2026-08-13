@@ -27,9 +27,9 @@ No hace falta conectar ningún cable de audio: el parlante es inalámbrico.
 
 La forma más fácil es desde el **Panel Web** (sección **"Bluetooth (Parlantes)"**):
 
-1. Pulsá *Escanear Dispositivos* — el panel busca parlantes cercanos.
+1. Pulsá *Escanear Dispositivos* — los dispositivos van apareciendo en vivo a medida que se descubren.
 2. Asegurate de que el parlante esté en **modo emparejamiento** (pairing).
-3. Pulsá *Conectar* en tu parlante. El panel lo empareja, lo confía y lo conecta.
+3. Apenas veas tu parlante, pulsá *Detener Escaneo* y después *Conectar* en ese dispositivo. El panel lo empareja, lo confía y lo conecta.
 
 O por consola (SSH):
 

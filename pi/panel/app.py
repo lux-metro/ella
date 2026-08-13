@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 import os
 import re
 import subprocess
+import threading
 import time
 from functools import wraps
 from dotenv import load_dotenv
@@ -25,10 +26,14 @@ SCRIPT_REVERTIR_WIFI = os.path.join(DIR_PANEL, '..', 'revertir_wifi.sh')
 
 NOMBRE_AP = "InstalacionElla"
 
-# Caché en memoria del último escaneo Bluetooth: guarda los dispositivos
-# encontrados para paginarlos desde el panel sin repetir el scan por página.
-BLUETOOTH_SCAN_CACHE = {'dispositivos': [], 'ts': 0.0}
-BLUETOOTH_POR_PAGINA = 8
+# Escaneo Bluetooth interactivo: el scan corre en un hilo de fondo y el panel
+# lo polea vía GET /bluetooth/estado. 'dispositivos' es un dict MAC->nombre que
+# se va completando en vivo; el usuario detiene el proceso cuando ve el que
+# busca (si no, hay un auto-stop de seguridad).
+BLUETOOTH_SCAN_MAX_SEG = 60
+_bt_lock = threading.Lock()
+_bt_estado = {'activo': False, 'error': '', 'dispositivos': {}, 'ts': 0.0}
+_bt_proc = None
 
 # --- Autenticación ---
 def verificar_credenciales(username, password):
@@ -131,24 +136,10 @@ def inicio():
     fecha_hora_pi = time.strftime('%Y-%m-%d %H:%M:%S')
     hora_pi_input = time.strftime('%Y-%m-%dT%H:%M:%S')
 
-    # Resultados del último escaneo Bluetooth, paginados.
-    dispositivos_bt = BLUETOOTH_SCAN_CACHE['dispositivos']
-    total_bt = len(dispositivos_bt)
-    paginas_bt = max(1, (total_bt + BLUETOOTH_POR_PAGINA - 1) // BLUETOOTH_POR_PAGINA)
-    pagina_bt = max(1, min(request.args.get('pag', 1, type=int), paginas_bt))
-    inicio_bt = (pagina_bt - 1) * BLUETOOTH_POR_PAGINA
-    dispositivos_pagina = dispositivos_bt[inicio_bt:inicio_bt + BLUETOOTH_POR_PAGINA]
-    hace_cuanto_bt = ""
-    if BLUETOOTH_SCAN_CACHE['ts']:
-        hace_cuanto_bt = f"Hace {int(time.time() - BLUETOOTH_SCAN_CACHE['ts'])}s"
-
     return render_template('index.html', config=config, presencia=presencia,
                            intensidad=intensidad, hace_cuanto=hace_cuanto,
                            servicios=servicios, ap=estado_ap(),
-                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input,
-                           dispositivos_bt=dispositivos_pagina, total_bt=total_bt,
-                           pagina_bt=pagina_bt, paginas_bt=paginas_bt,
-                           hace_cuanto_bt=hace_cuanto_bt)
+                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input)
 
 @app.route('/config', methods=['POST'])
 @requiere_auth
@@ -262,49 +253,91 @@ def encender_bluetooth():
 @app.route('/bluetooth/escanear', methods=['POST'])
 @requiere_auth
 def escanear_bluetooth():
-    encender_bluetooth()
+    with _bt_lock:
+        if _bt_estado['activo']:
+            flash("Ya hay un escaneo Bluetooth en curso.", "info")
+            return redirect(url_for('inicio'))
+        _bt_estado['activo'] = True
+        _bt_estado['error'] = ''
+        _bt_estado['dispositivos'] = {}
+        _bt_estado['ts'] = time.time()
 
-    # scan on con --timeout corta solo y devuelve un exit code confiable
-    # (a diferencia del truco de matar el proceso por timeout).
-    # 12s: la resolución de nombres es asíncrona y con 5s muchos quedan sin
-    # resolver (solo muestran la MAC). Más tiempo = más nombres reales.
-    scan = subprocess.run(
-        ["bluetoothctl", "--timeout", "12", "scan", "on"],
-        capture_output=True, text=True, timeout=30,
-    )
-    if scan.returncode != 0:
-        detalle = scan.stderr.strip() or scan.stdout.strip()
-        flash(f"Error al escanear Bluetooth: {detalle or 'bluetoothctl no disponible'}", "error")
-        return redirect(url_for('inicio'))
+    # El scan corre en un hilo de fondo: el POST vuelve al toque y el panel
+    # muestra los dispositivos en vivo poleando /bluetooth/estado.
+    threading.Thread(target=_escaneo_bluetooth_worker, daemon=True).start()
+    flash("Escaneando Bluetooth… Detené el escaneo cuando veas tu dispositivo.", "info")
+    return redirect(url_for('inicio'))
 
-    # La salida del scan incluye la resolución de nombres ("[CHG] Device
-    # <MAC> Name: <nombre>"), que el listado posterior ("bluetoothctl devices")
-    # todavía no refleja: muestra el alias, que si el nombre no se resolvió es
-    # el MAC con guiones. Parseamos esos nombres para mostrar el real.
-    nombres_resueltos = {}
-    patron_nuevo = re.compile(r"NEW Device\s+([0-9A-F:]{17})\s+(.+)")
-    patron_nombre = re.compile(r"\[CHG\] Device ([0-9A-F:]{17}) Name: (.+)")
-    for linea in scan.stdout.splitlines():
-        m = patron_nuevo.match(linea.strip())
-        if m:
-            nombres_resueltos.setdefault(m.group(1), m.group(2))
-            continue
-        m = patron_nombre.match(linea.strip())
-        if m:
-            nombres_resueltos[m.group(1)] = m.group(2)
+@app.route('/bluetooth/detener', methods=['POST'])
+@requiere_auth
+def detener_bluetooth():
+    _detener_scan_proceso()
+    with _bt_lock:
+        n = len(_bt_estado['dispositivos'])
+        activo = _bt_estado['activo']
+    if not activo:
+        flash("No hay un escaneo Bluetooth en curso.", "info")
+    else:
+        flash(f"Escaneo detenido. {n} dispositivo(s) encontrado(s).", "info")
+    return redirect(url_for('inicio'))
 
+@app.route('/bluetooth/estado')
+@requiere_auth
+def estado_bluetooth():
+    with _bt_lock:
+        return {
+            'activo': _bt_estado['activo'],
+            'error': _bt_estado['error'],
+            'ts': _bt_estado['ts'],
+            'dispositivos': [
+                {'mac': mac, 'nombre': nombre}
+                for mac, nombre in _bt_estado['dispositivos'].items()
+            ],
+        }
+
+def _detener_scan_proceso():
+    global _bt_proc
+    proc = _bt_proc
+    if proc is not None:
+        try:
+            proc.terminate()
+            proc.wait(timeout=5)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+    _bt_proc = None
+
+def _nombre_parece_mac(nombre, mac):
+    """True si el 'nombre' es en realidad la MAC sin resolver (guiones vs ':').
+
+    BlueZ muestra el alias; si el nombre no se resolvió, el alias ES la MAC
+    formateada con guiones. Esos son los que vale la pena reintentar resolver.
+    """
+    if nombre in ('', mac):
+        return True
+    return nombre.replace('-', ':').lower() == mac.lower()
+
+def _finalizar_nombres():
+    """Resolución de nombres asíncrona tras detener el scan.
+
+    'bluetoothctl devices' lista los ya conocidos y 'info <MAC>' dispara la
+    petición de nombre (que BlueZ resuelve de forma asíncrona).
+    """
     res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
-    dispositivos = []
     for line in res.stdout.splitlines():
         if line.startswith("Device "):
             parts = line.split(" ", 2)
             if len(parts) >= 3:
-                dispositivos.append((parts[1], parts[2]))
+                with _bt_lock:
+                    _bt_estado['dispositivos'].setdefault(parts[1], parts[2])
 
-    # La resolución de nombres es asíncrona: leer la propiedad Name (bluetoothctl
-    # info) dispara una petición de nombre al dispositivo. La forzamos para los
-    # que aún no la resolvieron y releemos después de una pausa.
-    pendientes = [mac for mac, alias in dispositivos if mac not in nombres_resueltos]
+    with _bt_lock:
+        pendientes = [
+            mac for mac, nombre in _bt_estado['dispositivos'].items()
+            if _nombre_parece_mac(nombre, mac)
+        ]
     for mac in pendientes:
         try:
             subprocess.run(
@@ -325,26 +358,90 @@ def escanear_bluetooth():
                 if linea.startswith("Name:"):
                     nombre = linea.split(":", 1)[1].strip()
                     if nombre:
-                        nombres_resueltos[mac] = nombre
+                        with _bt_lock:
+                            _bt_estado['dispositivos'][mac] = nombre
                     break
         except Exception:
             pass
 
-    dispositivos_con_nombre = []
-    for mac, alias in dispositivos:
-        nombre = nombres_resueltos.get(mac, alias)
-        dispositivos_con_nombre.append((mac, nombre))
+def _escaneo_bluetooth_worker():
+    try:
+        _escaneo_bluetooth_worker_inner()
+    except Exception:
+        # Red de seguridad: un fallo inesperado no puede dejar el estado
+        # 'activo' colgado (bloquearía futuros escaneos para siempre).
+        _detener_scan_proceso()
+        with _bt_lock:
+            _bt_estado['activo'] = False
+            _bt_estado['ts'] = time.time()
 
-    BLUETOOTH_SCAN_CACHE['dispositivos'] = dispositivos_con_nombre
-    BLUETOOTH_SCAN_CACHE['ts'] = time.time()
+def _escaneo_bluetooth_worker_inner():
+    global _bt_proc
+    encender_bluetooth()
 
-    if not dispositivos_con_nombre:
-        flash("No se encontraron dispositivos Bluetooth en 12s. Verificá que el parlante esté encendido y en modo descubrible/pareado.", "info")
-    else:
-        paginas = (len(dispositivos_con_nombre) + BLUETOOTH_POR_PAGINA - 1) // BLUETOOTH_POR_PAGINA
-        plural = "" if paginas == 1 else f" ({paginas} páginas)"
-        flash(f"Se encontraron {len(dispositivos_con_nombre)} dispositivo(s) Bluetooth{plural}.", "info")
-    return redirect(url_for('inicio'))
+    # stdbuf -oL fuerza el buffer de línea del bluetoothctl para que los
+    # [NEW]/[CHG] lleguen en vivo y no cuando se llene el buffer del pipe.
+    cmd = ["stdbuf", "-oL", "bluetoothctl", "scan", "on"]
+    try:
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1,
+        )
+    except FileNotFoundError:
+        # Fallback sin stdbuf (no debería pasar en Debian/Raspberry Pi OS).
+        cmd = ["bluetoothctl", "scan", "on"]
+        try:
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, bufsize=1,
+            )
+        except Exception as e:
+            with _bt_lock:
+                _bt_estado['error'] = f"No se pudo iniciar el scan: {e}"
+                _bt_estado['activo'] = False
+            return
+    _bt_proc = proc
+
+    # Auto-stop de seguridad: un scan olvidado no puede correr para siempre.
+    timer = threading.Timer(BLUETOOTH_SCAN_MAX_SEG, _detener_scan_proceso)
+    timer.daemon = True
+    timer.start()
+
+    patron_nuevo = re.compile(r"\[NEW\] Device\s+([0-9A-F:]{17})\s+(.+)")
+    patron_nombre = re.compile(r"\[CHG\] Device ([0-9A-F:]{17}) Name: (.+)")
+    error_salida = ""
+    try:
+        for linea in proc.stdout:
+            texto = linea.strip()
+            if "Failed" in texto or "Error" in texto:
+                if not error_salida:
+                    error_salida = texto
+            m = patron_nuevo.match(texto)
+            if m:
+                with _bt_lock:
+                    _bt_estado['dispositivos'].setdefault(m.group(1), m.group(2))
+                continue
+            m = patron_nombre.match(texto)
+            if m:
+                with _bt_lock:
+                    _bt_estado['dispositivos'][m.group(1)] = m.group(2)
+    except Exception:
+        pass
+    finally:
+        try:
+            proc.wait(timeout=5)
+        except Exception:
+            pass
+        _bt_proc = None
+        timer.cancel()
+
+    # Pasada final de resolución de nombres con el scan ya detenido.
+    _finalizar_nombres()
+    with _bt_lock:
+        if error_salida and not _bt_estado['dispositivos']:
+            _bt_estado['error'] = error_salida
+        _bt_estado['activo'] = False
+        _bt_estado['ts'] = time.time()
 
 @app.route('/bluetooth/conectar', methods=['POST'])
 @requiere_auth
