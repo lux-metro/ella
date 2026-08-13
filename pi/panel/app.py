@@ -225,13 +225,35 @@ def revertir_wifi():
 
 
 # --- Bluetooth API ---
+def encender_bluetooth():
+    # El adaptador puede quedar bloqueado por rfkill (Soft blocked: yes),
+    # lo que hace fallar el scan al instante con "NotReady". Lo desbloqueamos
+    # y encendemos antes de escanear. El arranque también lo asegura vía
+    # ella-bluetooth.service, esto es una red de seguridad extra.
+    try:
+        subprocess.run(["sudo", "-n", "rfkill", "unblock", "bluetooth"], timeout=10)
+    except Exception:
+        pass
+    try:
+        subprocess.run(["bluetoothctl", "power", "on"], timeout=10)
+    except Exception:
+        pass
+
 @app.route('/bluetooth/escanear', methods=['POST'])
 @requiere_auth
 def escanear_bluetooth():
-    try:
-        subprocess.run(["bluetoothctl", "scan", "on"], timeout=5)
-    except subprocess.TimeoutExpired:
-        subprocess.run(["bluetoothctl", "scan", "off"])
+    encender_bluetooth()
+
+    # scan on con --timeout corta solo y devuelve un exit code confiable
+    # (a diferencia del truco de matar el proceso por timeout).
+    scan = subprocess.run(
+        ["bluetoothctl", "--timeout", "5", "scan", "on"],
+        capture_output=True, text=True, timeout=20,
+    )
+    if scan.returncode != 0:
+        detalle = scan.stderr.strip() or scan.stdout.strip()
+        flash(f"Error al escanear Bluetooth: {detalle or 'bluetoothctl no disponible'}", "error")
+        return redirect(url_for('inicio'))
 
     res = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True)
     devices_html = "<ul>"
@@ -244,7 +266,7 @@ def escanear_bluetooth():
     devices_html += "</ul>"
 
     if devices_html == "<ul></ul>":
-        flash("No se encontraron dispositivos Bluetooth.", "info")
+        flash("No se encontraron dispositivos Bluetooth en 5s. Verificá que el parlante esté encendido y en modo descubrible/pareado.", "info")
     else:
         flash(f"Dispositivos encontrados:<br>{devices_html}", "info")
     return redirect(url_for('inicio'))

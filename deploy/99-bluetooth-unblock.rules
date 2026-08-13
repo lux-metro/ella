@@ -1,0 +1,3 @@
+# Desbloquea por software el adaptador Bluetooth al agregarse el dispositivo
+# rfkill (evita que quede en "Soft blocked: yes" tras un arranque).
+ACTION=="add", SUBSYSTEM=="rfkill", ATTR{type}=="bluetooth", ATTR{soft}="0"

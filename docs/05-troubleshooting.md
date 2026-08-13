@@ -62,6 +62,41 @@ play -n synth 3 sine 440
 
 ---
 
+## El escaneo de Bluetooth no encuentra dispositivos
+
+**Síntoma:** En el Panel Web, *Escanear Dispositivos* devuelve enseguida "No se encontraron dispositivos" (sin esperar los 5 s) o el error "Failed to start discovery: NotReady".
+
+**Causa más común:** el adaptador Bluetooth quedó **bloqueado por software** (rfkill) y/o **apagado**. Un scan real tarda 5 s; si el mensaje aparece al instante, el escaneo no arrancó.
+
+```bash
+# Verificar el estado del adaptador:
+rfkill list                      # ¿Bluetooth "Soft blocked: yes"?
+bluetoothctl show                # ¿Powered: yes?
+systemctl status bluetooth       # ¿bluetoothd corriendo?
+```
+
+**Solución:** desbloquear y encender el adaptador:
+
+```bash
+sudo rfkill unblock bluetooth
+bluetoothctl power on
+```
+
+Para que esto quede garantizado en cada arranque (operación desatendida), el deploy instala:
+
+- **`ella-bluetooth.service`** — servicio systemd que desbloquea y enciende el adaptador en cada boot.
+- **`99-bluetooth-unblock.rules`** — regla udev que fuerza el desbloqueo al aparecer el dispositivo rfkill.
+- **`AutoEnable=true`** en `/etc/bluetooth/main.conf` — bluetoothd enciende el adaptador solo.
+
+Verificar el servicio:
+
+```bash
+systemctl status ella-bluetooth.service
+sudo journalctl -u ella-bluetooth.service
+```
+
+---
+
 ## No llegan datos del Arduino
 
 **Síntoma:** El log muestra "Modo simulado activo" o errores de puerto serial

@@ -1,0 +1,12 @@
+[Unit]
+Description=ella - Asegurar Bluetooth desbloqueado y encendido
+After=bluetooth.service
+Wants=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStart={{ install_dir }}/pi/asegurar_bluetooth.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
