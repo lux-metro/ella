@@ -186,7 +186,10 @@ sudo loginctl enable-linger $PI_USER
 # Servicio de SISTEMA para el desbloqueo del Bluetooth (requiere root, corre
 # en cada boot antes que cualquier sesión). Reemplaza el placeholder
 # {{ install_dir }} por la ruta real del repositorio.
-chmod +x "$REPO_DIR/pi/asegurar_bluetooth.sh"
+# El +x es best-effort: el servicio lo invoca con /bin/bash, así que un archivo
+# sin permisos de ejecución (ej. si quedó con dueño root tras un 'git pull'
+# con sudo) no puede abortar la instalación.
+chmod +x "$REPO_DIR/pi/asegurar_bluetooth.sh" 2>/dev/null || true
 sed -e "s|{{ install_dir }}|$REPO_DIR|g" "$REPO_DIR/deploy/ella-bluetooth.service" > /tmp/ella-bluetooth.service
 sudo mv /tmp/ella-bluetooth.service /etc/systemd/system/ella-bluetooth.service
 sudo chown root:root /etc/systemd/system/ella-bluetooth.service

@@ -5,7 +5,7 @@ Wants=bluetooth.service
 
 [Service]
 Type=oneshot
-ExecStart={{ install_dir }}/pi/asegurar_bluetooth.sh
+ExecStart=/bin/bash {{ install_dir }}/pi/asegurar_bluetooth.sh
 RemainAfterExit=yes
 
 [Install]
