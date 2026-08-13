@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
-import html
 import os
 import re
 import subprocess
@@ -25,6 +24,11 @@ SCRIPT_ACTIVAR_AP = os.path.join(DIR_PANEL, '..', 'setup_pi_access_point.sh')
 SCRIPT_REVERTIR_WIFI = os.path.join(DIR_PANEL, '..', 'revertir_wifi.sh')
 
 NOMBRE_AP = "InstalacionElla"
+
+# Caché en memoria del último escaneo Bluetooth: guarda los dispositivos
+# encontrados para paginarlos desde el panel sin repetir el scan por página.
+BLUETOOTH_SCAN_CACHE = {'dispositivos': [], 'ts': 0.0}
+BLUETOOTH_POR_PAGINA = 8
 
 # --- Autenticación ---
 def verificar_credenciales(username, password):
@@ -127,10 +131,24 @@ def inicio():
     fecha_hora_pi = time.strftime('%Y-%m-%d %H:%M:%S')
     hora_pi_input = time.strftime('%Y-%m-%dT%H:%M:%S')
 
+    # Resultados del último escaneo Bluetooth, paginados.
+    dispositivos_bt = BLUETOOTH_SCAN_CACHE['dispositivos']
+    total_bt = len(dispositivos_bt)
+    paginas_bt = max(1, (total_bt + BLUETOOTH_POR_PAGINA - 1) // BLUETOOTH_POR_PAGINA)
+    pagina_bt = max(1, min(request.args.get('pag', 1, type=int), paginas_bt))
+    inicio_bt = (pagina_bt - 1) * BLUETOOTH_POR_PAGINA
+    dispositivos_pagina = dispositivos_bt[inicio_bt:inicio_bt + BLUETOOTH_POR_PAGINA]
+    hace_cuanto_bt = ""
+    if BLUETOOTH_SCAN_CACHE['ts']:
+        hace_cuanto_bt = f"Hace {int(time.time() - BLUETOOTH_SCAN_CACHE['ts'])}s"
+
     return render_template('index.html', config=config, presencia=presencia,
                            intensidad=intensidad, hace_cuanto=hace_cuanto,
                            servicios=servicios, ap=estado_ap(),
-                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input)
+                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input,
+                           dispositivos_bt=dispositivos_pagina, total_bt=total_bt,
+                           pagina_bt=pagina_bt, paginas_bt=paginas_bt,
+                           hace_cuanto_bt=hace_cuanto_bt)
 
 @app.route('/config', methods=['POST'])
 @requiere_auth
@@ -312,16 +330,20 @@ def escanear_bluetooth():
         except Exception:
             pass
 
-    devices_html = "<ul>"
+    dispositivos = []
     for mac, alias in dispositivos:
         nombre = nombres_resueltos.get(mac, alias)
-        devices_html += f"<li>{html.escape(nombre)} ({mac}) - <form style='display:inline' method='POST' action='/bluetooth/conectar'><input type='hidden' name='mac' value='{mac}'><button type='submit'>Conectar</button></form></li>"
-    devices_html += "</ul>"
+        dispositivos.append((mac, nombre))
 
-    if devices_html == "<ul></ul>":
+    BLUETOOTH_SCAN_CACHE['dispositivos'] = dispositivos
+    BLUETOOTH_SCAN_CACHE['ts'] = time.time()
+
+    if not dispositivos:
         flash("No se encontraron dispositivos Bluetooth en 12s. Verificá que el parlante esté encendido y en modo descubrible/pareado.", "info")
     else:
-        flash(f"Dispositivos encontrados:<br>{devices_html}", "info")
+        paginas = (len(dispositivos) + BLUETOOTH_POR_PAGINA - 1) // BLUETOOTH_POR_PAGINA
+        plural = "" if paginas == 1 else f" ({paginas} páginas)"
+        flash(f"Se encontraron {len(dispositivos)} dispositivo(s) Bluetooth{plural}.", "info")
     return redirect(url_for('inicio'))
 
 @app.route('/bluetooth/conectar', methods=['POST'])

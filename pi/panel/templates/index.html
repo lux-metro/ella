@@ -208,6 +208,82 @@
             gap: 1rem;
             margin-top: 1rem;
         }
+
+        .bt-list {
+            margin-top: 1.25rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+        .bt-list h3 {
+            font-size: 1rem;
+            margin: 0 0 0.75rem;
+            color: var(--text-secondary);
+        }
+        .bt-list-meta {
+            font-size: 0.8rem;
+            opacity: 0.7;
+            margin-left: 0.5rem;
+        }
+        .bt-list ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .bt-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 0.75rem;
+            background: rgba(99, 102, 241, 0.06);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            word-break: break-word;
+        }
+        .bt-device {
+            flex: 1;
+            font-weight: 500;
+        }
+        .bt-mac {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .bt-connect {
+            width: auto;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .pagination a {
+            padding: 0.3rem 0.7rem;
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+            color: var(--accent-color);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+        .pagination a:hover {
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+        .page-current {
+            padding: 0.3rem 0.7rem;
+            background-color: var(--accent-color);
+            color: white;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -299,6 +375,44 @@
                     <form method="POST" action="/bluetooth/probar">
                         <button type="submit" class="btn-outline" style="border-color:var(--success-color); color:var(--success-color);">Probar Sonido</button>
                     </form>
+
+                    {% if dispositivos_bt %}
+                    <div class="bt-list">
+                        <h3>Dispositivos encontrados
+                            {% if total_bt %}({{ total_bt }}){% endif %}
+                            {% if hace_cuanto_bt %}<span class="bt-list-meta">{{ hace_cuanto_bt }}</span>{% endif %}
+                        </h3>
+                        <ul>
+                            {% for mac, nombre in dispositivos_bt %}
+                            <li>
+                                <span class="bt-device">{{ nombre }}</span>
+                                <span class="bt-mac">{{ mac }}</span>
+                                <form style="display:inline;" method="POST" action="/bluetooth/conectar">
+                                    <input type="hidden" name="mac" value="{{ mac }}">
+                                    <button type="submit" class="btn-outline bt-connect">Conectar</button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% if paginas_bt > 1 %}
+                        <div class="pagination">
+                            {% if pagina_bt > 1 %}
+                            <a href="?pag={{ pagina_bt - 1 }}">‹ Anterior</a>
+                            {% endif %}
+                            {% for p in range(1, paginas_bt + 1) %}
+                                {% if p == pagina_bt %}
+                                <span class="page-current">{{ p }}</span>
+                                {% else %}
+                                <a href="?pag={{ p }}">{{ p }}</a>
+                                {% endif %}
+                            {% endfor %}
+                            {% if pagina_bt < paginas_bt %}
+                            <a href="?pag={{ pagina_bt + 1 }}">Siguiente ›</a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
