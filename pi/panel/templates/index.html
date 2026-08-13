@@ -523,6 +523,7 @@
         var btDevices = [];
         var btActivo = false;
         var btError = '';
+        var btTs = 0;
         var btPagina = 1;
         var BT_POR_PAGINA = 8;
         var BT_POLL_MS = 1500;
@@ -541,6 +542,7 @@
                 .then(function(estado) {
                     btActivo = estado.activo;
                     btError = estado.error || '';
+                    btTs = estado.ts || 0;
                     btDevices = estado.dispositivos || [];
                     renderBt();
                 })
@@ -560,9 +562,16 @@
             } else {
                 btn.textContent = 'Escanear Dispositivos';
                 btn.onclick = iniciarEscaneo;
-                estado.className = 'bt-estado';
-                estado.textContent = btError ? btError : '';
-                if (btError) estado.className = 'bt-estado error';
+                if (btError) {
+                    estado.className = 'bt-estado error';
+                    estado.textContent = btError;
+                } else if (btTs > 0 && total === 0) {
+                    estado.className = 'bt-estado';
+                    estado.textContent = 'Scan finalizado sin dispositivos. Verificá que el parlante esté encendido y en modo emparejamiento.';
+                } else {
+                    estado.className = 'bt-estado';
+                    estado.textContent = '';
+                }
             }
 
             var total = btDevices.length;

@@ -381,7 +381,10 @@ def _escaneo_bluetooth_worker_inner():
 
     # stdbuf -oL fuerza el buffer de línea del bluetoothctl para que los
     # [NEW]/[CHG] lleguen en vivo y no cuando se llene el buffer del pipe.
-    cmd = ["stdbuf", "-oL", "bluetoothctl", "scan", "on"]
+    # Ojo: en modo one-shot, "scan on" SIN "--timeout" retorna apenas imprime
+    # "Discovery started"; por eso se usa --timeout (igual al auto-stop), que
+    # bloquea ese tiempo y va streameando los dispositivos.
+    cmd = ["stdbuf", "-oL", "bluetoothctl", "--timeout", str(BLUETOOTH_SCAN_MAX_SEG), "scan", "on"]
     try:
         proc = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -389,7 +392,7 @@ def _escaneo_bluetooth_worker_inner():
         )
     except FileNotFoundError:
         # Fallback sin stdbuf (no debería pasar en Debian/Raspberry Pi OS).
-        cmd = ["bluetoothctl", "scan", "on"]
+        cmd = ["bluetoothctl", "--timeout", str(BLUETOOTH_SCAN_MAX_SEG), "scan", "on"]
         try:
             proc = subprocess.Popen(
                 cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
