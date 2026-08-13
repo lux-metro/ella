@@ -400,9 +400,40 @@
                         <ul id="bt-lista"></ul>
                         <div id="bt-paginador" class="pagination"></div>
                     </div>
+                    {% if parlante %}
+                    <div class="bt-configured" style="margin-top:1rem; border-top:1px solid var(--border-color); padding-top:1rem;">
+                        <h3>Parlante configurado</h3>
+                        <div class="stat">
+                            <span class="stat-label">Dispositivo:</span>
+                            <span>{{ parlante.nombre or parlante.mac }}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Estado:</span>
+                            <span class="status-badge {% if parlante.conectado %}status-active{% else %}status-inactive{% endif %}">{{ 'Conectado' if parlante.conectado else 'Desconectado' }}</span>
+                        </div>
+                        <div class="actions" style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                            <form method="POST" action="/bluetooth/desconectar" style="flex:1;">
+                                <input type="hidden" name="mac" value="{{ parlante.mac }}">
+                                <button type="submit" class="btn-outline" style="border-color:var(--error-color); color:var(--error-color);">Desconectar</button>
+                            </form>
+                            {% if not parlante.conectado %}
+                            <form method="POST" action="/bluetooth/conectar" style="flex:1;">
+                                <input type="hidden" name="mac" value="{{ parlante.mac }}">
+                                <button type="submit" class="btn-outline">Conectar</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <p style="font-size:0.875rem; color:var(--text-secondary); margin-top:1rem;">
+                        Sin parlante configurado. Para que la Pi se reconecte sola tras un
+                        reinicio, definí <code>mac_parlante_bluetooth</code> en
+                        <code>pi/config.yaml</code>.
+                    </p>
+                    {% endif %}
                     <form method="POST" action="/bluetooth/desvincular" style="margin-top:1rem; margin-bottom:1rem;">
                         <div class="form-group">
-                            <label>MAC para desconectar:</label>
+                            <label>MAC para desvincular (borra el emparejamiento):</label>
                             <input type="text" name="mac" placeholder="Ej: FC:58:FA:9E:3F:CD">
                         </div>
                         <button type="submit" class="btn-danger">Desvincular</button>

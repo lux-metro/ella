@@ -24,6 +24,11 @@ DIR_PANEL = os.path.dirname(os.path.abspath(__file__))
 SCRIPT_ACTIVAR_AP = os.path.join(DIR_PANEL, '..', 'setup_pi_access_point.sh')
 SCRIPT_REVERTIR_WIFI = os.path.join(DIR_PANEL, '..', 'revertir_wifi.sh')
 
+# La MAC del parlante configurado vive en pi/config.yaml (la lee el motor de
+# audio). El panel la usa para mostrar el estado y poder desconectar el
+# parlante con un click.
+CONFIG_YAML = os.path.join(DIR_PANEL, '..', 'config.yaml')
+
 NOMBRE_AP = "InstalacionElla"
 
 # Escaneo Bluetooth interactivo: el scan corre en un hilo de fondo y el panel
@@ -105,6 +110,35 @@ def estado_ap():
         pass
     return {'configurado': configurado, 'activo': activo}
 
+def mac_parlante_configurado():
+    """Lee la MAC del parlante definida en pi/config.yaml (sin depender de PyYAML)."""
+    try:
+        with open(CONFIG_YAML) as f:
+            for linea in f:
+                if linea.strip().startswith('mac_parlante_bluetooth:'):
+                    valor = linea.split(':', 1)[1].strip().strip('"\'')
+                    if re.match(r'^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$', valor):
+                        return valor
+    except Exception:
+        pass
+    return ''
+
+def info_dispositivo(mac):
+    """Consulta 'bluetoothctl info <mac>' y devuelve (nombre, conectado)."""
+    try:
+        info = subprocess.run(["bluetoothctl", "info", mac], capture_output=True, text=True, timeout=10).stdout
+    except Exception:
+        return '', False
+    nombre = ''
+    conectado = False
+    for linea in info.splitlines():
+        linea = linea.strip()
+        if linea.startswith('Name:'):
+            nombre = linea.split(':', 1)[1].strip()
+        elif linea.startswith('Connected:'):
+            conectado = linea.split(':', 1)[1].strip() == 'yes'
+    return nombre, conectado
+
 # --- Rutas ---
 @app.route('/')
 @requiere_auth
@@ -136,10 +170,18 @@ def inicio():
     fecha_hora_pi = time.strftime('%Y-%m-%d %H:%M:%S')
     hora_pi_input = time.strftime('%Y-%m-%dT%H:%M:%S')
 
+    # Parlante Bluetooth configurado (pi/config.yaml) + su estado
+    mac_parlante = mac_parlante_configurado()
+    parlante = None
+    if mac_parlante:
+        nombre, conectado = info_dispositivo(mac_parlante)
+        parlante = {'mac': mac_parlante, 'nombre': nombre, 'conectado': conectado}
+
     return render_template('index.html', config=config, presencia=presencia,
                            intensidad=intensidad, hace_cuanto=hace_cuanto,
                            servicios=servicios, ap=estado_ap(),
-                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input)
+                           fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input,
+                           parlante=parlante)
 
 @app.route('/config', methods=['POST'])
 @requiere_auth
@@ -538,6 +580,24 @@ def desvincular_bluetooth():
             flash(f"Dispositivo {mac} desvinculado.", "success")
         except Exception as e:
             flash(f"Error desvinculando {mac}: {e}", "error")
+    return redirect(url_for('inicio'))
+
+@app.route('/bluetooth/desconectar', methods=['POST'])
+@requiere_auth
+def desconectar_bluetooth():
+    mac = request.form.get('mac')
+    if not mac:
+        flash("Falta la MAC del dispositivo.", "error")
+        return redirect(url_for('inicio'))
+    try:
+        res = subprocess.run(["bluetoothctl", "disconnect", mac], capture_output=True, text=True, timeout=15)
+        salida = (res.stdout or '').strip()
+        if res.returncode == 0 or 'not connected' in salida.lower():
+            flash(f"Parlante {mac} desconectado.", "success")
+        else:
+            flash(f"Error desconectando {mac}: {salida or 'sin detalles'}", "error")
+    except Exception as e:
+        flash(f"Error desconectando {mac}: {e}", "error")
     return redirect(url_for('inicio'))
 
 @app.route('/bluetooth/probar', methods=['POST'])
