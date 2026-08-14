@@ -34,6 +34,13 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Duración (en segundos) del solapamiento entre clips cuando hay presencia:
+# el clip siguiente empieza a subir mientras el anterior termina en silencio.
+CROSSFADE_SEG = 2.0
+
+# Granularidad del poll de presencia (el radar escribe /tmp/intensidad.txt a 10Hz).
+POLL_PRESENCIA_SEG = 0.2
+
 
 class MotorDeAudio:
     """
@@ -58,7 +65,7 @@ class MotorDeAudio:
 
         # Estado interno
         self._corriendo = False
-        self._proceso_actual = None  # El subprocess de sox en curso
+        self._procesos_activos = []  # Subprocesses de sox en curso (puede haber solapamiento)
 
     def iniciar(self):
         """
@@ -87,9 +94,14 @@ class MotorDeAudio:
     def detener(self):
         """Detiene el motor y termina cualquier reproducción en curso."""
         self._corriendo = False
-        if self._proceso_actual and self._proceso_actual.poll() is None:
-            self._proceso_actual.terminate()
-            self._proceso_actual.wait(timeout=3)
+        for proceso in list(self._procesos_activos):
+            if proceso.poll() is None:
+                proceso.terminate()
+                try:
+                    proceso.wait(timeout=3)
+                except Exception:
+                    pass
+        self._procesos_activos.clear()
         logger.info("Motor de audio detenido.")
 
     def _bucle_principal(self):
@@ -101,7 +113,7 @@ class MotorDeAudio:
             if not self._reproducir_sin_presencia():
                 presencia = self._obtener_presencia()
                 if presencia is None or presencia <= 0.0:
-                    time.sleep(1)
+                    time.sleep(POLL_PRESENCIA_SEG)
                     continue
 
             # Obtener lista de archivos de audio disponibles
@@ -118,20 +130,45 @@ class MotorDeAudio:
             # Seleccionar un archivo al azar
             archivo = random.choice(archivos)
 
-            # Calcular efectos basados en los sensores actuales
+            # Calcular efectos basados en la presencia actual
             efectos = self._calcular_efectos()
 
             # Asegurar que el parlante Bluetooth esté conectado
             self._asegurar_conexion_bluetooth()
 
-            # Reproducir el archivo con los efectos
-            self._reproducir(archivo, efectos)
+            if self._hay_presencia():
+                # Hay gente: reproducción inmediata y encadenada con crossfade.
+                self._reproducir_crossfade(archivo, efectos)
+            else:
+                # Sin presencia: clip normal seguido de una pausa que se corta
+                # apenas alguien aparece.
+                self._reproducir(archivo, efectos)
+                if self._corriendo:
+                    pausa = self._calcular_pausa(efectos)
+                    logger.debug(f"Pausa de {pausa:.1f} segundos...")
+                    self._pausa_interrumpible(pausa)
 
-            # Pausa entre clips
-            if self._corriendo:
-                pausa = self._calcular_pausa(efectos)
-                logger.debug(f"Pausa de {pausa:.1f} segundos...")
-                time.sleep(pausa)
+    def _hay_presencia(self) -> bool:
+        """True si hay presencia activa (intensidad > 0)."""
+        return (self._obtener_presencia() or 0.0) > 0.0
+
+    def _dormir_interrumpible(self, segundos: float):
+        """Duerme hasta 'segundos' en pasos cortos, cortando si el motor se detiene."""
+        fin = time.time() + segundos
+        while self._corriendo and time.time() < fin:
+            time.sleep(min(POLL_PRESENCIA_SEG, fin - time.time()))
+
+    def _pausa_interrumpible(self, pausa: float):
+        """
+        Pausa entre clips que se corta apenas se detecta presencia, para que
+        el próximo clip arranque de inmediato.
+        """
+        fin = time.time() + pausa
+        while self._corriendo and time.time() < fin:
+            if self._hay_presencia():
+                logger.debug("Presencia detectada: cortando la pausa.")
+                return
+            time.sleep(POLL_PRESENCIA_SEG)
 
     def _listar_archivos_audio(self) -> list:
         """
@@ -391,19 +428,16 @@ class MotorDeAudio:
         )
         return False
 
-    def _reproducir(self, ruta_archivo: str, efectos: dict):
+    def _lanzar_reproduccion(self, ruta_archivo: str, efectos: dict, fade_in: float = 0.0, fade_out: float = 0.0):
         """
-        Reproduce un archivo de audio con los efectos especificados usando sox.
-
-        Args:
-            ruta_archivo: Ruta completa al archivo de audio
-            efectos:      Dict con 'volumen', 'tempo', 'pitch_shift'
+        Inicia un subprocess de sox para reproducir el clip SIN esperar a que
+        termine (necesario para el crossfade). Retorna el proceso o None si falló.
         """
         nombre = os.path.basename(ruta_archivo)
         logger.info(f"Reproduciendo: {nombre}")
 
         # Construir el comando sox
-        # play [archivo] vol [volumen] tempo [velocidad] pitch [semitonos_en_cents]
+        # play [archivo] vol [volumen] tempo [velocidad] pitch [semitonos_en_cents] fade ...
         pitch_cents = int(efectos['pitch_shift'] * 100)  # semitonos → cents
 
         comando = [
@@ -417,13 +451,19 @@ class MotorDeAudio:
         if abs(pitch_cents) > 10:
             comando.extend(['pitch', str(pitch_cents)])
 
+        # Fades (se aplican en la salida, o sea en segundos ya con el tempo aplicado).
+        # fade <in> 0 <out>: stop-time 0 = final del clip.
+        if fade_in or fade_out:
+            comando.extend(['fade', str(fade_in), '0', str(fade_out)])
+
         try:
-            self._proceso_actual = subprocess.Popen(
+            proceso = subprocess.Popen(
                 comando,
                 stdout=subprocess.DEVNULL,  # No mostrar output de sox
                 stderr=subprocess.DEVNULL,
             )
-            self._proceso_actual.wait()  # Esperar a que termine la reproducción
+            self._procesos_activos.append(proceso)
+            return proceso
 
         except FileNotFoundError:
             logger.error(
@@ -431,9 +471,91 @@ class MotorDeAudio:
                 "Instalá sox con: sudo apt install sox"
             )
             time.sleep(5)  # Esperar antes de reintentar para no saturar el log
+            return None
 
         except Exception as e:
             logger.error(f"Error reproduciendo {nombre}: {e}")
+            return None
+
+    def _reproducir(self, ruta_archivo: str, efectos: dict, fade_in: float = 0.0, fade_out: float = 0.0):
+        """
+        Reproduce un archivo de audio con los efectos especificados usando sox,
+        esperando a que termine.
+
+        Args:
+            ruta_archivo: Ruta completa al archivo de audio
+            efectos:      Dict con 'volumen', 'tempo', 'pitch_shift'
+            fade_in:      Segundos de fade-in al inicio (0 = sin fade)
+            fade_out:     Segundos de fade-out al final (0 = sin fade)
+        """
+        proceso = self._lanzar_reproduccion(ruta_archivo, efectos, fade_in, fade_out)
+        if proceso is None:
+            return
+        try:
+            proceso.wait()  # Esperar a que termine la reproducción
+        finally:
+            if proceso in self._procesos_activos:
+                self._procesos_activos.remove(proceso)
+
+    def _duracion_audio(self, ruta_archivo: str) -> float:
+        """
+        Duración en segundos de un archivo (vía soxi -D, viene con sox).
+
+        Retorna:
+            float con la duración, o 0.0 si no se puede determinar.
+        """
+        try:
+            res = subprocess.run(
+                ['soxi', '-D', ruta_archivo],
+                capture_output=True, text=True, timeout=10,
+            )
+            return float(res.stdout.strip())
+        except Exception:
+            return 0.0
+
+    def _reproducir_crossfade(self, ruta_archivo: str, efectos: dict):
+        """
+        Reproduce un clip con crossfade hacia el siguiente: el clip actual se
+        desvanece en su cola y el siguiente empieza a subir antes de que termine,
+        para que con presencia el sonido sea continuo y sin delay.
+
+        Si no se puede calcular la duración (sin soxi), reproduce normal: el
+        bucle principal encadena el próximo clip igual, sin silencio.
+        """
+        duracion = self._duracion_audio(ruta_archivo)
+        duracion_real = duracion / max(efectos['tempo'], 0.5) if duracion else 0.0
+        fade = min(CROSSFADE_SEG, duracion_real / 2) if duracion_real else 0.0
+
+        if fade <= 0:
+            self._reproducir(ruta_archivo, efectos)
+            return
+
+        # Clip actual: suena completo con fade-out en la cola (no bloquea).
+        proceso_a = self._lanzar_reproduccion(ruta_archivo, efectos, fade_out=fade)
+        if proceso_a is None:
+            return
+
+        # Esperar hasta que queden 'fade' segundos del clip...
+        self._dormir_interrumpible(max(0.0, duracion_real - fade))
+        if not self._corriendo:
+            return
+
+        # ...y arrancar el siguiente con fade-in solapado (A termina en silencio).
+        archivos = self._listar_archivos_audio()
+        if not archivos:
+            return
+        siguiente = random.choice(archivos)
+        efectos2 = self._calcular_efectos()
+        self._reproducir(siguiente, efectos2, fade_in=fade, fade_out=fade)
+
+        # A ya debería haber terminado (solo le quedaba el fade): esperarlo acotado.
+        if proceso_a.poll() is None:
+            try:
+                proceso_a.wait(timeout=5)
+            except Exception:
+                pass
+        if proceso_a in self._procesos_activos:
+            self._procesos_activos.remove(proceso_a)
 
     def _calcular_pausa(self, efectos: dict) -> float:
         """
