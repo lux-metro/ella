@@ -64,17 +64,33 @@ def leer_configuracion():
     config = {
         'VOL_MIN': '0.3', 'VOL_MAX': '1.0',
         'SPEED_MIN': '0.85', 'SPEED_MAX': '1.35',
-        'VELOCIDAD_SUBIDA': '0.1', 'VELOCIDAD_BAJADA': '0.05',
+        'TIEMPO_SUBIDA_SEG': '2', 'TIEMPO_BAJADA_SEG': '5',
         'UMBRAL_PRESENCIA': '0.5'
     }
     if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and '=' in line:
-                    k, v = line.split('=', 1)
-                    if k in config:
-                        config[k] = v
+        # Las claves legacy ('VELOCIDAD_*', por tick) se convierten a segundos
+        # para pre-cargar el form sin perder el tuning de instalaciones previas.
+        # Las nuevas claves en segundos tienen prioridad.
+        legacy = {}
+        definidas = set()
+        for line in open(CONFIG_FILE):
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, v = line.split('=', 1)
+                if k in config:
+                    config[k] = v
+                    definidas.add(k)
+                elif k in ('VELOCIDAD_SUBIDA', 'VELOCIDAD_BAJADA'):
+                    legacy[k] = v
+        for k, v in legacy.items():
+            clave_nueva = 'TIEMPO_SUBIDA_SEG' if k == 'VELOCIDAD_SUBIDA' else 'TIEMPO_BAJADA_SEG'
+            if clave_nueva in definidas:
+                continue
+            try:
+                segundos = 1.0 / (float(v) * 10.0)
+                config[clave_nueva] = f"{segundos:.1f}"
+            except (ValueError, ZeroDivisionError):
+                pass
     return config
 
 def guardar_configuracion(config_dict):
