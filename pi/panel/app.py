@@ -65,7 +65,8 @@ def leer_configuracion():
         'VOL_MIN': '0.3', 'VOL_MAX': '1.0',
         'SPEED_MIN': '0.85', 'SPEED_MAX': '1.35',
         'TIEMPO_SUBIDA_SEG': '2', 'TIEMPO_BAJADA_SEG': '5',
-        'UMBRAL_PRESENCIA': '0.5'
+        'UMBRAL_PRESENCIA': '0.5',
+        'REPRODUCIR_SIN_PRESENCIA': 'no'
     }
     if os.path.exists(CONFIG_FILE):
         # Las claves legacy ('VELOCIDAD_*', por tick) se convierten a segundos
@@ -271,6 +272,10 @@ def guardar_config():
     for key in config.keys():
         if key in request.form:
             config[key] = request.form[key]
+    # Los checkbox no mandan valor al desmarcarse: se fuerza 'no'.
+    config['REPRODUCIR_SIN_PRESENCIA'] = (
+        'si' if 'REPRODUCIR_SIN_PRESENCIA' in request.form else 'no'
+    )
     guardar_configuracion(config)
     flash("Configuración guardada exitosamente.", "success")
     return redirect(url_for('inicio'))

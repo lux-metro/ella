@@ -95,6 +95,15 @@ class MotorDeAudio:
     def _bucle_principal(self):
         """Bucle principal: seleccionar archivo → aplicar efectos → reproducir → pausa → repetir."""
         while self._corriendo:
+            # Si está desactivado el modo "reproducir sin presencia" y no hay
+            # nadie (o el radar no manda datos), quedamos en silencio con un
+            # poll corto para arrancar apenas aparezca alguien.
+            if not self._reproducir_sin_presencia():
+                presencia = self._obtener_presencia()
+                if presencia is None or presencia <= 0.0:
+                    time.sleep(1)
+                    continue
+
             # Obtener lista de archivos de audio disponibles
             archivos = self._listar_archivos_audio()
 
@@ -194,6 +203,28 @@ class MotorDeAudio:
         )
 
         return efectos
+
+    def _reproducir_sin_presencia(self) -> bool:
+        """
+        Lee el toggle "reproducir sin presencia" de ~/ella/config.env
+        (lo escribe el Panel Web). Por defecto 'no': silencio sin presencia.
+
+        Se relee en cada iteración del bucle, así el cambio se aplica
+        en vivo sin reiniciar el servicio.
+
+        Retorna:
+            True si se puede reproducir aunque no haya presencia.
+        """
+        try:
+            with open(os.path.expanduser("~/ella/config.env")) as f:
+                for linea in f:
+                    linea = linea.strip()
+                    if linea.startswith('REPRODUCIR_SIN_PRESENCIA='):
+                        valor = linea.split('=', 1)[1].strip().lower()
+                        return valor in ('si', '1', 'true', 'yes')
+        except Exception:
+            pass
+        return False
 
     def _obtener_presencia(self):
         """
