@@ -87,11 +87,11 @@ echo "--- Configurando Bluetooth (desbloqueo automático) ---"
 # ("Soft blocked: yes"), lo que hace fallar el escaneo y la reconexión del
 # parlante. Aseguramos el desbloqueo en cada boot:
 #   - Regla udev que fuerza soft=0 al aparecer el dispositivo rfkill
-#   - AutoEnable=true para que bluetoothd encienda el adaptador solo
-# NOTA: NO hay servicio que ejecute 'bluetoothctl power on' en el boot: hacerlo
-# apenas arranca bluetoothd interfiere con la descarga de firmware del
-# controlador por UART y deja el adaptador atorado ('command tx timeout').
-# AutoEnable enciende el adaptador recién cuando hci0 está registrado.
+# NOTA: NO hay servicio ni AutoEnable que enciendan el adaptador en el boot.
+# Mandar 'power on' o que bluetoothd inicie el adaptador apenas se registra
+# hci0 interfiere con el handshake de firmware del controlador por UART y lo
+# deja atorado ('command 0x0c14 tx timeout'). El motor de audio espera a que
+# hci0 esté registrado y recién entonces enciende y conecta el parlante.
 sudo systemctl enable --now bluetooth || true
 
 # Desbloquear y encender YA (sin esperar el próximo boot)
@@ -213,15 +213,6 @@ sudo loginctl enable-linger $PI_USER
 sudo cp "$REPO_DIR/deploy/99-bluetooth-unblock.rules" /etc/udev/rules.d/99-bluetooth-unblock.rules
 sudo chown root:root /etc/udev/rules.d/99-bluetooth-unblock.rules
 sudo chmod 0644 /etc/udev/rules.d/99-bluetooth-unblock.rules
-
-# AutoEnable: encender el adaptador automáticamente con bluetoothd.
-# Reemplaza una clave AutoEnable existente (incluso si es 'false') y agrega
-# la sección [Policy] solo si hace falta.
-sudo sed -i '/^AutoEnable=/d' /etc/bluetooth/main.conf
-if ! sudo grep -q "^\[Policy\]" /etc/bluetooth/main.conf; then
-    echo '[Policy]' | sudo tee -a /etc/bluetooth/main.conf >/dev/null
-fi
-sudo sed -i '/^\[Policy\]/a AutoEnable=true' /etc/bluetooth/main.conf
 
 # ------------------------------------------------------------------------------
 # 7. Access Point (OPCIONAL — no se activa acá)

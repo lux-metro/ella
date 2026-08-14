@@ -346,8 +346,9 @@ class MotorDeAudio:
         logger.info(
             f"Parlante Bluetooth no conectado. Intentando conectar {mac}..."
         )
-        # udev + AutoEnable lo encienden en el boot; el power on es una red
-        # de seguridad por si el adaptador quedó apagado más adelante.
+        # Sin AutoEnable (causaba un tx timeout al pisar el firmware por UART),
+        # el adaptador queda apagado tras el boot; el power on de acá lo
+        # enciende, ya con hci0 registrado (seguro).
         try:
             subprocess.run(
                 ['bluetoothctl', 'power', 'on'],

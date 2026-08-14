@@ -111,20 +111,27 @@ bluetoothctl power on
 Para que esto quede garantizado en cada arranque (operación desatendida), el deploy instala:
 
 - **`99-bluetooth-unblock.rules`** — regla udev que fuerza el desbloqueo al aparecer el dispositivo rfkill.
-- **`AutoEnable=true`** en `/etc/bluetooth/main.conf` — bluetoothd enciende el adaptador solo.
 
-> **NOTA:** deliberadamente **no hay** un servicio que ejecute `bluetoothctl power on`
-> en el boot. En Raspberry Pi 3 (Bluetooth por UART), mandar `power on` apenas
-> arranca bluetoothd interfiere con la descarga de firmware del BCM43438 y deja el
-> controlador atorado (`command 0x0c14 tx timeout`, `Powered` nunca pasa a `yes`,
-> solo se recupera recargando el driver `hci_uart`). `AutoEnable` enciende el
-> adaptador recién cuando hci0 ya está registrado, sin pisar esa ventana.
+> **NOTA:** deliberadamente **no hay** servicio que ejecute `bluetoothctl power on`
+> en el boot y **`AutoEnable` está desactivado**. En Raspberry Pi 3 (Bluetooth por
+> UART), mandar `power on` o que bluetoothd inicie el adaptador apenas se registra
+> hci0 interfiere con el handshake de firmware del BCM43438 y lo deja atorado
+> (`command 0x0c14 tx timeout`; `Powered` nunca pasa a `yes`; solo se recupera
+> recargando el driver `hci_uart`). El motor de audio espera a que hci0 esté
+> registrado y recién entonces enciende y conecta el parlante solo.
 
-Verificar que el adaptador quedó encendido tras el arranque:
+El adaptador queda apagado pero sano tras el arranque. Para verificar:
 
 ```bash
 bluetoothctl show | grep Powered
 dmesg | grep -iE 'tx timeout|failed: -110'
+```
+
+Si algún boot vuelve a mostrar `tx timeout` o el parlante no conecta, revisá que
+`AutoEnable` siga desactivado en `/etc/bluetooth/main.conf`:
+
+```bash
+grep -E 'AutoEnable' /etc/bluetooth/main.conf   # debe decir AutoEnable=false o no aparecer
 ```
 
 ---
