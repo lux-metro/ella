@@ -50,7 +50,7 @@ Para desactivarlo: sección **"Zona de peligro"** del Panel Web (reinicia la Pi)
 
 ## Qué pasa después de instalar
 
-Si todo salió bien, la Pi se va a reiniciar sola. Cuando vuelva a arrancar (tarda ~1 minuto), se conectará a tu WiFi local y el motor de audio va a estar funcionando en modo simulado (porque asume que todavía no subiste archivos de audio reales ni conectaste el Arduino).
+Si todo salió bien, la Pi se va a reiniciar sola. Cuando vuelva a arrancar (tarda ~1 minuto), se conectará a tu WiFi local y el motor de audio va a estar funcionando en modo simulado (porque asume que todavía no subiste archivos de audio reales).
 
 Para verificar que está funcionando, volvé a entrar por SSH y corré:
 ```bash
@@ -62,7 +62,7 @@ El Panel Web queda en `http://<IP_DE_LA_PI>:5000` (buscá la IP con `hostname -I
 
 Siguientes pasos lógicos:
 1. Subir archivos de audio reales a `~/ella/audio/`
-2. Emparejar el parlante Bluetooth (ver `docs/03-audio-setup.md`)
-3. Conectar el Arduino y los sensores
-4. Ajustar el volumen (ver `docs/03-audio-setup.md`)
+2. Emparejar el parlante Bluetooth (ver `docs/02-audio-setup.md`)
+3. Ajustar el volumen (ver `docs/02-audio-setup.md`)
+4. Grabar el firmware del radar en la ESP32 (ver `hardware/radar_esp32/`)
 5. Cuando la instalación esté montada, activar el Access Point desde el Panel Web

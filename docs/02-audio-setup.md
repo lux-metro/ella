@@ -150,4 +150,4 @@ Este script verifica que:
 
 ---
 
-*← [02-arduino-setup.md](02-arduino-setup.md) | Siguiente: [04-wiring.md](04-wiring.md) →*
+*← [01-raspberry-pi-setup.md](01-raspberry-pi-setup.md) | Siguiente: [03-wiring.md](03-wiring.md) →*

@@ -154,4 +154,4 @@ Si el servicio aparece como `active (running)`, todo está bien. El Panel Web qu
 
 ---
 
-*← [00-antes-de-empezar.md](00-antes-de-empezar.md) | Siguiente: [02-arduino-setup.md](02-arduino-setup.md) →*
+*← [00-antes-de-empezar.md](00-antes-de-empezar.md) | Siguiente: [02-audio-setup.md](02-audio-setup.md) →*

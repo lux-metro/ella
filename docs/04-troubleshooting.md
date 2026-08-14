@@ -136,30 +136,6 @@ grep -E 'AutoEnable' /etc/bluetooth/main.conf   # debe decir AutoEnable=false o 
 
 ---
 
-## No llegan datos del Arduino
-
-**Síntoma:** El log muestra "Modo simulado activo" o errores de puerto serial
-
-```bash
-# Verificar que el Arduino está conectado:
-ls /dev/ttyUSB* /dev/ttyACM*
-
-# Ver qué está mandando el Arduino (si está conectado por USB):
-cat /dev/ttyUSB0  # o el puerto que aparezca
-
-# Verificar permisos del puerto:
-ls -la /dev/ttyUSB0
-# Debería mostrar "dialout" en el grupo
-```
-
-```bash
-# Agregar usuario al grupo dialout (si no tiene acceso):
-sudo usermod -a -G dialout pi
-# Cerrar sesión y volver a entrar
-```
-
----
-
 ## El ESP32 no se conecta al WiFi (escanea las redes pero falla)
 
 **Síntoma:** El ESP32 escanea las redes con buen RSSI, pero la conexión siempre falla (el log del Arduino IDE muestra `Reason: 2 - AUTH_EXPIRE`), incluso contra redes abiertas sin contraseña.
@@ -270,9 +246,8 @@ Los errores más comunes:
 
 | Error | Causa | Solución |
 |-------|-------|----------|
-| `ModuleNotFoundError: No module named 'serial'` | Falta instalar dependencias | `pip3 install -r pi/shared/requirements.txt` |
+| `ModuleNotFoundError: No module named 'yaml'` | Falta instalar dependencias | `pip3 install -r pi/shared/requirements.txt` |
 | `FileNotFoundError: audio/` | No hay archivos de audio | Copiar archivos a `~/ella/audio/` |
-| `PermissionError: /dev/ttyS0` | Sin permisos para el puerto serial | `sudo usermod -a -G dialout pi` |
 | `OSError: [Errno 2] No such file or directory: 'play'` | sox no está instalado | `sudo apt install sox` |
 
 ---
@@ -331,8 +306,6 @@ sudo shutdown -h now
    ```bash
    cd ~/ella
    python3 tests/test_audio.py
-   python3 tests/test_serial.py
-   python3 tests/test_sensors.py
    ```
    
 2. Revisá los logs completos del día:
@@ -349,4 +322,4 @@ sudo shutdown -h now
 
 ---
 
-*← [04-wiring.md](04-wiring.md) | [README principal](../README.md) →*
+*← [03-wiring.md](03-wiring.md) | [README principal](../README.md) →*

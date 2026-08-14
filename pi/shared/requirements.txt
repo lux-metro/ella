@@ -3,5 +3,4 @@
 # Dependencias Python para el motor de audio.
 # Instalar con: pip3 install -r requirements.txt
 
-pyserial>=3.5       # Comunicación serial con el Arduino
 pyyaml>=6.0         # Leer archivos de configuración .yaml

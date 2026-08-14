@@ -12,7 +12,7 @@ Ella propone al textil como un territorio donde memoria, cuerpo e historia se en
 
 ## ¿Qué hace este repositorio?
 
-Este repositorio contiene todo el software, firmware y documentación para montar la instalación *ella*: una Raspberry Pi que genera audio evolutivo, un Arduino que lee sensores ambientales (temperatura, luz), un radar de presencia que detecta a los visitantes, y un parlante Bluetooth por el que sale el sonido. La presencia de gente acelera el tempo de la pieza.
+Este repositorio contiene todo el software, firmware y documentación para montar la instalación *ella*: una Raspberry Pi que genera audio evolutivo, un radar de presencia (ESP32) que detecta a los visitantes, y un parlante Bluetooth por el que sale el sonido. La presencia de gente acelera el tempo de la pieza.
 
 **Si estás arrancando desde cero**, empezá por: [docs/00-antes-de-empezar.md](docs/00-antes-de-empezar.md)
 
@@ -23,7 +23,7 @@ Este repositorio contiene todo el software, firmware y documentación para monta
 ```
 ella/
 ├── docs/           → Guías paso a paso (empezá acá)
-├── hardware/       → Firmware del Arduino (código de sensores)
+├── hardware/       → Firmware del radar de presencia (ESP32-C3)
 ├── pi/             → Software de las Raspberry Pi (motor de audio)
 ├── deploy/         → Scripts de instalación automatizada
 ├── prototype/      → Scripts de prototipo y experimentos (no son producción)
@@ -39,10 +39,9 @@ ella/
 |------|------|-------------|
 | 0 | [00-antes-de-empezar.md](docs/00-antes-de-empezar.md) | Qué es cada cosa, lista de hardware |
 | 1 | [01-raspberry-pi-setup.md](docs/01-raspberry-pi-setup.md) | Grabar SD card y primer arranque |
-| 2 | [02-arduino-setup.md](docs/02-arduino-setup.md) | Subir firmware al Arduino |
-| 3 | [03-audio-setup.md](docs/03-audio-setup.md) | Configurar salida de audio |
-| 4 | [04-wiring.md](docs/04-wiring.md) | Conexiones físicas de cables |
-| 5 | [05-troubleshooting.md](docs/05-troubleshooting.md) | Qué hacer si algo no funciona |
+| 2 | [02-audio-setup.md](docs/02-audio-setup.md) | Configurar salida de audio |
+| 3 | [03-wiring.md](docs/03-wiring.md) | Conexiones físicas y montaje |
+| 4 | [04-troubleshooting.md](docs/04-troubleshooting.md) | Qué hacer si algo no funciona |
 
 ---
 
@@ -95,15 +94,16 @@ Tienes dos opciones:
                     ┌───────────────────────────────────┐
                     │        Raspberry Pi 3 (una)       │
                     │   audio_engine.py + sox/play      │
+                    │   sentir-presencia.py (UDP :5005) │
                     └──────┬───────────────────┬────────┘
-                           │ UART serie        │ UDP (red)
-                    ┌──────▼───────┐    ┌──────▼──────────┐
-                    │  Arduino Uno │    │  ESP32-C3       │
-                    │  temp · luz  │    │  radar presencia│
-                    └──────────────┘    └─────────────────┘
+                           │ WiFi (red de AP)  │ A2DP (Bluetooth)
+                    ┌──────▼──────────┐        │
+                    │  ESP32-C3       │        │
+                    │  radar presencia│        │
+                    └─────────────────┘        │
 ```
 
-*La instalación usa una sola Raspberry Pi: una única voz que evoluciona según los sensores y la presencia de visitantes.*
+*La instalación usa una sola Raspberry Pi: una única voz que evoluciona según la presencia de visitantes.*
 
 ---
 
@@ -111,7 +111,7 @@ Tienes dos opciones:
 
 - [x] Prototipo bash (sox/play + Bluetooth) — `prototype/bash/`
 - [x] Motor de audio Python + configuración por dispositivo — `pi/shared/` (corre como servicio `reproducir.service`)
-- [x] Comunicación Arduino → Raspberry Pi por UART — `serial_reader.py` + firmware `hardware/sensor_hub/`
+- [x] Radar de presencia ESP32 → Raspberry Pi por WiFi (UDP) — firmware `hardware/radar_esp32/` + servicio `sentir-presencia.service`
 - [x] Deploy automatizado — `deploy/provision.sh`
 - [x] Panel de control web + Access Point bajo demanda — `pi/panel/`
 - [ ] Pruebas de larga duración (72 hs continuas)
@@ -124,12 +124,9 @@ Listado completo con links en [docs/00-antes-de-empezar.md](docs/00-antes-de-emp
 
 **Resumen:**
 - 1× Raspberry Pi 3 Model B (ya tenés)
-- 1× Arduino Uno (del Starter Kit)
-- 1× Sensor de temperatura (ej: LM35 o NTC)
-- 1× Fotoresistor (LDR) para luz ambiental
 - 1× Módulo radar de presencia (ESP32-C3 + RCWL-0516)
 - 1× Parlante Bluetooth
-- Cables Dupont macho-macho y macho-hembra
+- Cables Dupont y cable USB-C (alimentar la ESP32)
 - SD card (mínimo 8GB, clase 10)
 - Fuente de alimentación 5V para la Pi
 

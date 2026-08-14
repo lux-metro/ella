@@ -53,8 +53,8 @@ echo "--- Instalando dependencias ---"
 # python3-venv, pip, git: para el entorno
 sudo apt-get install -y python3-venv python3-pip git sox libsox-fmt-all alsa-utils curl network-manager bluez pipewire-pulse wireplumber libspa-0.2-bluetooth
 
-# Asegurar pertenencia a grupos (dialout para UART, audio para sonido)
-sudo usermod -a -G dialout,audio "$PI_USER"
+# Asegurar pertenencia al grupo audio (para sonido)
+sudo usermod -a -G audio "$PI_USER"
 
 # ------------------------------------------------------------------------------
 # 1.4 PipeWire headless (A2DP Bluetooth sin sesión gráfica)

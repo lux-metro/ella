@@ -41,7 +41,6 @@ directorio_audio: "~/ella/repo/audio"
 
 volumen_base: 0.75
 # Volumen de reproducción base, entre 0.0 (silencio) y 1.0 (máximo).
-# El volumen real va a variar según la temperatura que lea el Arduino.
 
 pausa_min_seg: 3
 # Tiempo mínimo de silencio entre clips, en segundos.
@@ -49,17 +48,6 @@ pausa_min_seg: 3
 pausa_max_seg: 20
 # Tiempo máximo de silencio entre clips, en segundos.
 # La pausa real varía según la presencia: con gente, el ritmo es más ágil.
-
-# --- Comunicación con el Arduino ---
-puerto_serial: "/dev/ttyS0"
-# Puerto UART donde está conectado el Arduino.
-# /dev/ttyS0 = puerto UART nativo de la Raspberry Pi (pines GPIO 14 y 15)
-# /dev/ttyUSB0 = si el Arduino está conectado por USB (para pruebas)
-# Si el Arduino no está conectado, el sistema usa modo simulado automáticamente.
-
-baudrate: 9600
-# Velocidad de comunicación serial.
-# Tiene que coincidir con el valor BAUDRATE en hardware/sensor_hub/config.h
 
 # --- Comportamiento artístico ---
 # Las siguientes reglas definen cómo los sensores afectan el sonido.
@@ -70,7 +58,5 @@ baudrate: 9600
 #   Presencia (radar ESP32)  →  Tempo (velocidad)
 #                               más presencia = más rápido (rango: 0.6x a 1.2x)
 #                               sin radar = tempo aleatorio en el mismo rango
-#   Temperatura              →  Volumen
-#                               más caliente = ligeramente más volumen (±20%)
-#   Luz ambiental            →  Variación de pitch
-#                               más oscuro = pitch estable / más luminoso = más variación
+#   Volumen base             →  fijo (se ajusta desde el Panel Web)
+#   Pitch                    →  variación aleatoria sutil (±1 semitono)

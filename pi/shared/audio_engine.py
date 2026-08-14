@@ -4,7 +4,7 @@ audio_engine.py — Motor de reproducción de audio para *ella*
 Este módulo maneja toda la lógica de reproducción:
 - Seleccionar clips de audio al azar
 - Aplicar efectos en tiempo real (velocidad, volumen)
-- Recibir datos de sensores y hacer que influyan en el sonido
+- Reaccionar a la presencia de visitantes (radar ESP32)
 - Gestionar la evolución sonora durante la exhibición
 
 El audio se reproduce usando 'sox' (el comando 'play') a través de
@@ -19,7 +19,7 @@ restablece si hace falta.
 
 Uso:
     from audio_engine import MotorDeAudio
-    motor = MotorDeAudio(config, lector_serial)
+    motor = MotorDeAudio(config)
     motor.iniciar()  # Bloquea. Llama desde el hilo principal.
 """
 
@@ -39,20 +39,16 @@ class MotorDeAudio:
     """
     Motor de audio principal de *ella*.
 
-    Toma la configuración del dispositivo y un lector de sensores,
-    y genera una performance sonora continua que evoluciona según
-    la temperatura, la luz y la presencia de visitantes.
+    Toma la configuración del dispositivo y genera una performance
+    sonora continua que evoluciona según la presencia de visitantes.
     """
 
-    def __init__(self, config: dict, lector_serial=None):
+    def __init__(self, config: dict):
         """
         Args:
-            config:        Diccionario de configuración cargado desde config.yaml
-            lector_serial: Instancia de LectorSerial (opcional). Si es None,
-                           los efectos no van a responder a sensores.
+            config: Diccionario de configuración cargado desde config.yaml
         """
         self.config = config
-        self.lector_serial = lector_serial
         self.directorio_audio = os.path.expanduser(config['directorio_audio'])
 
         # Parámetros de reproducción con valores por defecto
@@ -151,29 +147,18 @@ class MotorDeAudio:
 
     def _calcular_efectos(self) -> dict:
         """
-        Calcula los parámetros de efectos de audio basados en los sensores.
+        Calcula los parámetros de efectos de audio según la presencia.
 
-        La presencia (radar ESP32) modula el tempo, la temperatura el
-        volumen y la luz la variación de pitch. Si no hay datos de un
-        sensor, usa valores por defecto con variación aleatoria sutil.
+        La presencia (radar ESP32) modula el tempo: más gente cerca =
+        más rápido. El volumen queda en el valor base y el pitch varía
+        sutilmente al azar para que cada clip suene distinto.
 
         Retorna:
             dict con claves 'volumen', 'tempo', 'pitch_shift'
         """
-        if self.lector_serial:
-            sensores = self.lector_serial.obtener_sensores()
-        else:
-            # Sin sensores: valores neutros con variación aleatoria
-            sensores = {
-                'temperature': 0.5,
-                'light': 0.5,
-            }
-
         presencia = self._obtener_presencia()
-        temperatura = max(0.0, min(1.0, sensores['temperature']))
-        luz = max(0.0, min(1.0, sensores['light']))
 
-        # --- Reglas de mapeo sensores → efectos ---
+        # --- Reglas de mapeo presencia → efectos ---
         # Estas son las decisiones artísticas centrales del sistema.
         # Podés cambiarlas para alterar el comportamiento sonoro.
 
@@ -186,18 +171,11 @@ class MotorDeAudio:
         else:
             tempo = 0.6 + presencia * 0.6
 
-        # TEMPERATURA → VOLUMEN
-        # Más caliente = ligeramente más volumen (activación)
-        # Rango: volumen_base × 0.8 a volumen_base × 1.2
-        volumen = self.volumen_base * (0.8 + temperatura * 0.4)
+        # Volumen base fijo (el parlante se ajusta desde el Panel Web)
+        volumen = self.volumen_base
 
-        # LUZ → VARIACIÓN ALEATORIA DE PITCH
-        # Más oscuro = sonido más estable (menos variación)
-        # Más luminoso = más imprevisibilidad
-        variacion_pitch = luz * 2.0  # ±0 a ±2 semitonos
-
-        # Agregar aleatoriedad dentro del rango permitido por la luz
-        pitch_shift = random.uniform(-variacion_pitch, variacion_pitch)
+        # Variación aleatoria de pitch ±1 semitono (imprevisibilidad sutil)
+        pitch_shift = random.uniform(-1.0, 1.0)
 
         efectos = {
             'volumen': max(0.1, min(1.5, volumen)),
@@ -209,13 +187,6 @@ class MotorDeAudio:
             logger.debug(f"Presencia: {presencia:.2f}")
         else:
             logger.debug("Sin datos de presencia (tempo aleatorio).")
-
-        if self.lector_serial and not self.lector_serial.modo_simulado:
-            logger.debug(
-                f"Sensores reales — Temp: {temperatura:.2f}, Luz: {luz:.2f}"
-            )
-        else:
-            logger.debug("Usando valores simulados de sensores.")
 
         logger.debug(
             f"Efectos calculados — Vol: {efectos['volumen']:.2f}, "
