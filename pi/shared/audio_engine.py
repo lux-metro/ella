@@ -29,6 +29,7 @@ import os
 import random
 import re
 import subprocess
+import threading
 import time
 
 logger = logging.getLogger(__name__)
@@ -71,6 +72,14 @@ class MotorDeAudio:
         """
         self._corriendo = True
         logger.info(f"Motor de audio iniciado. Directorio: {self.directorio_audio}")
+
+        # Conectar el parlante Bluetooth apenas arranca la Pi, sin esperar a
+        # que suene un clip (en un hilo aparte para no demorar la reproducción).
+        threading.Thread(
+            target=self._reconectar_bluetooth_al_inicio,
+            name="reconectar-bluetooth-inicio",
+            daemon=True,
+        ).start()
 
         try:
             self._bucle_principal()
@@ -250,6 +259,55 @@ class MotorDeAudio:
             pass
         return self.config.get('mac_parlante_bluetooth', '').strip()
 
+    def _esperar_adaptador_bluetooth(self, max_seg: int = 90) -> bool:
+        """
+        Espera (haciendo poll, sin tocar el adaptador) a que hci0 esté
+        registrado con bluetoothd.
+
+        Importante: recién cuando bluetoothd tiene un controlador, la descarga
+        de firmware por UART terminó. Antes de eso, mandar 'power on' o cualquier
+        comando HCI interfiere con el firmware y deja el adaptador atorado
+        ('command tx timeout'), como pasaba con el servicio de boot que se
+        eliminó. Por eso acá NO se pokea nada: solo se consulta 'bluetoothctl
+        show', que es de solo lectura.
+
+        Retorna:
+            True apenas aparece un controlador, o False si se agotó max_seg.
+        """
+        inicio = time.time()
+        while self._corriendo and (time.time() - inicio) < max_seg:
+            try:
+                salida = subprocess.run(
+                    ['bluetoothctl', 'show'],
+                    capture_output=True, text=True, timeout=10,
+                ).stdout
+                if 'Controller' in salida:
+                    return True
+            except Exception:
+                pass
+            time.sleep(3)
+        logger.warning(
+            f"No se detectó el adaptador Bluetooth tras {max_seg} segundos."
+        )
+        return False
+
+    def _reconectar_bluetooth_al_inicio(self):
+        """
+        Conecta el parlante Bluetooth al iniciar el motor (y por lo tanto al
+        arrancar la Pi). Espera a que el adaptador esté listo y recién entonces
+        hace la reconexión, sin interferir con la inicialización del firmware.
+
+        Corre en un hilo daemon: si el parlante está apagado o fuera de
+        alcance, loguea y lo reintenta el bucle principal antes de cada clip.
+        """
+        if not self._corriendo:
+            return
+        if not self._mac_parlante():
+            logger.info("Sin MAC de parlante configurada; omitiendo reconexión al inicio.")
+            return
+        if self._esperar_adaptador_bluetooth(max_seg=90):
+            self._asegurar_conexion_bluetooth()
+
     def _asegurar_conexion_bluetooth(self) -> bool:
         """
         Verifica que el parlante Bluetooth esté conectado y, si no,
@@ -278,11 +336,18 @@ class MotorDeAudio:
         if esta_conectado():
             return True
 
+        # Espera acotada a que hci0 esté registrado antes de mandar 'power on':
+        # si el adaptador está a medio inicializar (firmware por UART), ese
+        # comando lo deja atorado. Sin adaptador tras 15 s, seguimos sin
+        # bluetooth y el audio sale por el dispositivo por defecto.
+        if not self._esperar_adaptador_bluetooth(max_seg=15):
+            return False
+
         logger.info(
             f"Parlante Bluetooth no conectado. Intentando conectar {mac}..."
         )
-        # El adaptador puede estar recién arrancando (udev + AutoEnable lo
-        # encienden en el boot): lo encendemos por las dudas.
+        # udev + AutoEnable lo encienden en el boot; el power on es una red
+        # de seguridad por si el adaptador quedó apagado más adelante.
         try:
             subprocess.run(
                 ['bluetoothctl', 'power', 'on'],
