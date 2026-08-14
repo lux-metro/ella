@@ -34,8 +34,9 @@ mac_parlante_bluetooth: ""
 # Dejalo vacío si usás otra salida de audio.
 # Podés emparejar el parlante desde el Panel Web (card Bluetooth).
 
-directorio_audio: "/home/pi/ella/audio"
-# Carpeta donde están los archivos de audio.
+directorio_audio: "~/ella/repo/audio"
+# Carpeta donde están los archivos de audio (los clips viven en el repo, en audio/).
+# El "~" se expande al home del usuario actual, así que funciona en cualquier Pi.
 # El motor va a reproducir todos los archivos .wav, .flac, .ogg, .mp3 de esta carpeta.
 
 volumen_base: 0.75

@@ -102,13 +102,8 @@ sudo bluetoothctl power on >/dev/null 2>&1 || true
 # 2. Configuración de Directorios y Clonado
 # ------------------------------------------------------------------------------
 echo "--- Configurando estructura de directorios ---"
-mkdir -p "$BASE_DIR/audio"
-
-# Crear un clip de prueba para que no falle sox al arrancar
-if [ ! -f "$BASE_DIR/audio/silencio.wav" ]; then
-    echo "Generando archivo de audio de inicialización..."
-    sox -n -r 44100 -c 2 "$BASE_DIR/audio/silencio.wav" trim 0.0 1.0
-fi
+# Los clips de audio viven en el repo (audio/), commiteados. No hace falta
+# crear directorios de audio fuera del repositorio.
 
 # Detectar el repositorio. El script puede correrse de dos formas:
 #   a) Con curl | bash (git ya se instaló en el paso 1): clonamos a ~/ella/repo.
