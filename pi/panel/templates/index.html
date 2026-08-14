@@ -113,6 +113,37 @@
         }
         .status-active { background-color: rgba(16, 185, 129, 0.2); color: var(--success-color); }
         .status-inactive { background-color: rgba(239, 68, 68, 0.2); color: var(--error-color); }
+        .status-warning { background-color: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+
+        .pres-bar {
+            height: 0.6rem;
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .pres-bar-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+        .pres-senal-dot {
+            display: inline-block;
+            width: 0.6rem;
+            height: 0.6rem;
+            border-radius: 50%;
+            background-color: var(--success-color);
+            margin-right: 0.4rem;
+            vertical-align: -0.05rem;
+        }
+        .pres-senal-dot.pulso {
+            animation: pulso 1.2s ease-in-out infinite;
+        }
+        @keyframes pulso {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
 
         .form-group {
             margin-bottom: 1rem;
@@ -338,16 +369,23 @@
                 <div class="card">
                     <h2>Estado del Sistema</h2>
                     <div class="stat">
-                        <span class="stat-label">Señal Presencia Bruta (0/1):</span>
-                        <span class="stat-value">{{ presencia }}</span>
+                        <span class="stat-label">Presencia:</span>
+                        <span id="pres-badge" class="status-badge {{ 'status-active' if presencia == '1' else 'status-inactive' }}">{{ 'PRESENCIA' if presencia == '1' else 'AUSENCIA' if presencia == '0' else 'N/A' }}</span>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">Intensidad Suavizada (0.0 - 1.0):</span>
-                        <span class="stat-value">{{ intensidad }}</span>
+                        <span class="stat-label">Intensidad (0.0 - 1.0):</span>
+                        <div style="flex:1; max-width:40%;">
+                            <div class="pres-bar"><div id="pres-bar-fill" class="pres-bar-fill" style="width:{{ (intensidad|float * 100) if intensidad != 'N/A' else 0 }}%;"></div></div>
+                        </div>
+                        <span id="pres-intensidad" class="stat-value">{{ intensidad }}</span>
                     </div>
                     <div class="stat">
                         <span class="stat-label">Último aviso del radar:</span>
-                        <span class="stat-value">{{ hace_cuanto }}</span>
+                        <span id="pres-hace-cuanto" class="stat-value">{{ hace_cuanto }}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Señal del radar:</span>
+                        <span id="pres-senal" class="stat-value"></span>
                     </div>
                 </div>
 
@@ -682,6 +720,67 @@
 
         pollBt();
         setInterval(pollBt, BT_POLL_MS);
+
+        // ---- Presencia en tiempo real ----
+        var PRES_POLL_MS = 1000;
+
+        function formatearHaceCuanto(seg) {
+            if (seg === null || seg === undefined) return 'Nunca';
+            if (seg < 1) return 'hace 1 s';
+            if (seg < 60) return 'hace ' + seg + ' s';
+            var min = Math.floor(seg / 60);
+            var restoSeg = seg % 60;
+            return 'hace ' + min + ' min ' + restoSeg + ' s';
+        }
+
+        function renderPresencia(estado) {
+            var badge = document.getElementById('pres-badge');
+            var intensidad = document.getElementById('pres-intensidad');
+            var fill = document.getElementById('pres-bar-fill');
+            var hace = document.getElementById('pres-hace-cuanto');
+            var senal = document.getElementById('pres-senal');
+
+            if (estado.presencia === '1') {
+                badge.textContent = 'PRESENCIA';
+                badge.className = 'status-badge status-active';
+            } else if (estado.presencia === '0') {
+                badge.textContent = 'AUSENCIA';
+                badge.className = 'status-badge status-inactive';
+            } else {
+                badge.textContent = 'N/A';
+                badge.className = 'status-badge status-inactive';
+            }
+
+            var val = parseFloat(estado.intensidad);
+            if (!isNaN(val)) {
+                val = Math.max(0, Math.min(1, val));
+                intensidad.textContent = val.toFixed(2);
+                fill.style.width = (val * 100) + '%';
+            } else {
+                intensidad.textContent = 'N/A';
+                fill.style.width = '0%';
+            }
+
+            hace.textContent = formatearHaceCuanto(estado.hace_cuanto);
+
+            if (estado.viva) {
+                senal.innerHTML = '<span class="pres-senal-dot pulso"></span>Radar con señal';
+                senal.className = 'stat-value';
+            } else {
+                senal.textContent = '⚠ Radar sin señal';
+                senal.className = 'stat-value status-warning';
+            }
+        }
+
+        function pollPresencia() {
+            fetch('/presencia/estado')
+                .then(function(r) { return r.json(); })
+                .then(renderPresencia)
+                .catch(function() {});
+        }
+
+        pollPresencia();
+        setInterval(pollPresencia, PRES_POLL_MS);
     </script>
 </body>
 </html>

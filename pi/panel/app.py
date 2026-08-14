@@ -212,6 +212,42 @@ def inicio():
                            fecha_hora_pi=fecha_hora_pi, hora_pi_input=hora_pi_input,
                            parlante=parlante)
 
+# El radar se considera "con señal" si recibió un aviso hace menos de esta
+# cantidad de segundos (la ESP32 envía actualizaciones periódicas).
+RADAR_SIN_SEÑAL_SEG = 10
+
+@app.route('/presencia/estado')
+@requiere_auth
+def estado_presencia():
+    """Estado de presencia en tiempo real (lo polea el panel con fetch).
+
+    Lee los archivos que escribe sentir-presencia.py y devuelve JSON:
+      - presencia:   0/1 (señal bruta del radar)
+      - intensidad:  0.0-1.0 (valor suavizado)
+      - hace_cuanto: segundos desde el último aviso, o None si nunca hubo
+      - viva:        True si el radar está emitiendo (aviso reciente)
+    """
+    presencia = leer_estado('/tmp/presencia.txt', 'N/A')
+    intensidad = leer_estado('/tmp/intensidad.txt', 'N/A')
+    ultimo_aviso_ts = leer_estado('/tmp/ultimo_aviso.txt', '0')
+
+    hace_cuanto = None
+    viva = False
+    try:
+        ts = float(ultimo_aviso_ts)
+        if ts > 0:
+            hace_cuanto = int(time.time() - ts)
+            viva = hace_cuanto <= RADAR_SIN_SEÑAL_SEG
+    except Exception:
+        pass
+
+    return {
+        'presencia': presencia,
+        'intensidad': intensidad,
+        'hace_cuanto': hace_cuanto,
+        'viva': viva,
+    }
+
 @app.route('/config', methods=['POST'])
 @requiere_auth
 def guardar_config():
