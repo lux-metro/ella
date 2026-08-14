@@ -316,8 +316,8 @@ def reiniciar_pi():
 def encender_bluetooth():
     # El adaptador puede quedar bloqueado por rfkill (Soft blocked: yes),
     # lo que hace fallar el scan al instante con "NotReady". Lo desbloqueamos
-    # y encendemos antes de escanear. El arranque también lo asegura vía
-    # ella-bluetooth.service, esto es una red de seguridad extra.
+    # y encendemos antes de escanear. El arranque también lo asegura vía la
+    # regla udev y AutoEnable; esto es una red de seguridad extra.
     try:
         subprocess.run(["sudo", "-n", "rfkill", "unblock", "bluetooth"], timeout=10)
     except Exception:

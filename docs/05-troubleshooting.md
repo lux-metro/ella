@@ -110,15 +110,21 @@ bluetoothctl power on
 
 Para que esto quede garantizado en cada arranque (operación desatendida), el deploy instala:
 
-- **`ella-bluetooth.service`** — servicio systemd que desbloquea y enciende el adaptador en cada boot.
 - **`99-bluetooth-unblock.rules`** — regla udev que fuerza el desbloqueo al aparecer el dispositivo rfkill.
 - **`AutoEnable=true`** en `/etc/bluetooth/main.conf` — bluetoothd enciende el adaptador solo.
 
-Verificar el servicio:
+> **NOTA:** deliberadamente **no hay** un servicio que ejecute `bluetoothctl power on`
+> en el boot. En Raspberry Pi 3 (Bluetooth por UART), mandar `power on` apenas
+> arranca bluetoothd interfiere con la descarga de firmware del BCM43438 y deja el
+> controlador atorado (`command 0x0c14 tx timeout`, `Powered` nunca pasa a `yes`,
+> solo se recupera recargando el driver `hci_uart`). `AutoEnable` enciende el
+> adaptador recién cuando hci0 ya está registrado, sin pisar esa ventana.
+
+Verificar que el adaptador quedó encendido tras el arranque:
 
 ```bash
-systemctl status ella-bluetooth.service
-sudo journalctl -u ella-bluetooth.service
+bluetoothctl show | grep Powered
+dmesg | grep -iE 'tx timeout|failed: -110'
 ```
 
 ---

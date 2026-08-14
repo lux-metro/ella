@@ -86,9 +86,12 @@ echo "--- Configurando Bluetooth (desbloqueo automático) ---"
 # El adaptador Bluetooth puede quedar bloqueado por rfkill tras un arranque
 # ("Soft blocked: yes"), lo que hace fallar el escaneo y la reconexión del
 # parlante. Aseguramos el desbloqueo en cada boot:
-#   - Servicio systemd ella-bluetooth.service (rfkill unblock + power on)
 #   - Regla udev que fuerza soft=0 al aparecer el dispositivo rfkill
 #   - AutoEnable=true para que bluetoothd encienda el adaptador solo
+# NOTA: NO hay servicio que ejecute 'bluetoothctl power on' en el boot: hacerlo
+# apenas arranca bluetoothd interfiere con la descarga de firmware del
+# controlador por UART y deja el adaptador atorado ('command tx timeout').
+# AutoEnable enciende el adaptador recién cuando hci0 está registrado.
 sudo systemctl enable --now bluetooth || true
 
 # Desbloquear y encender YA (sin esperar el próximo boot)
@@ -205,21 +208,6 @@ systemctl --user enable reproducir.service
 
 # Asegurar que systemd de usuario inicie en el boot sin requerir login
 sudo loginctl enable-linger $PI_USER
-
-# Servicio de SISTEMA para el desbloqueo del Bluetooth (requiere root, corre
-# en cada boot antes que cualquier sesión). Reemplaza el placeholder
-# {{ install_dir }} por la ruta real del repositorio.
-# El +x es best-effort: el servicio lo invoca con /bin/bash, así que un archivo
-# sin permisos de ejecución (ej. si quedó con dueño root tras un 'git pull'
-# con sudo) no puede abortar la instalación.
-chmod +x "$REPO_DIR/pi/asegurar_bluetooth.sh" 2>/dev/null || true
-sed -e "s|{{ install_dir }}|$REPO_DIR|g" "$REPO_DIR/deploy/ella-bluetooth.service" > /tmp/ella-bluetooth.service
-sudo mv /tmp/ella-bluetooth.service /etc/systemd/system/ella-bluetooth.service
-sudo chown root:root /etc/systemd/system/ella-bluetooth.service
-sudo chmod 0644 /etc/systemd/system/ella-bluetooth.service
-sudo systemctl daemon-reload
-sudo systemctl enable ella-bluetooth.service
-sudo systemctl restart ella-bluetooth.service
 
 # Regla udev: desbloquear por software el adaptador al aparecer rfkill
 sudo cp "$REPO_DIR/deploy/99-bluetooth-unblock.rules" /etc/udev/rules.d/99-bluetooth-unblock.rules

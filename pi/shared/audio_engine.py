@@ -281,8 +281,8 @@ class MotorDeAudio:
         logger.info(
             f"Parlante Bluetooth no conectado. Intentando conectar {mac}..."
         )
-        # El adaptador puede estar recién arrancando (depende de la timing de
-        # ella-bluetooth.service en el boot): lo encendemos por las dudas.
+        # El adaptador puede estar recién arrancando (udev + AutoEnable lo
+        # encienden en el boot): lo encendemos por las dudas.
         try:
             subprocess.run(
                 ['bluetoothctl', 'power', 'on'],
