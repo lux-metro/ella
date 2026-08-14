@@ -513,24 +513,24 @@
                     
                     <div class="form-group">
                         <label>Velocidad de Subida (por tick)</label>
-                        <input type="number" step="0.01" name="VELOCIDAD_SUBIDA" value="{{ config.VELOCIDAD_SUBIDA }}" required>
-                        <small style="color:var(--text-secondary); font-size:0.75rem;">Qué tan rápido sube la intensidad al detectar presencia.</small>
+                        <input type="number" step="0.001" min="0" name="VELOCIDAD_SUBIDA" value="{{ config.VELOCIDAD_SUBIDA }}" required>
+                        <small style="color:var(--text-secondary); font-size:0.75rem;">Se actualiza 10 veces por segundo. 0.1 → llega a 1.0 en ~1 s; 0.01 → en ~10 s.</small>
                     </div>
 
                     <div class="form-group">
                         <label>Velocidad de Bajada (por tick)</label>
-                        <input type="number" step="0.01" name="VELOCIDAD_BAJADA" value="{{ config.VELOCIDAD_BAJADA }}" required>
-                        <small style="color:var(--text-secondary); font-size:0.75rem;">Qué tan rápido baja al no haber nadie.</small>
+                        <input type="number" step="0.001" min="0" name="VELOCIDAD_BAJADA" value="{{ config.VELOCIDAD_BAJADA }}" required>
+                        <small style="color:var(--text-secondary); font-size:0.75rem;">Qué tan rápido decae al no haber nadie. 0.05 → cae en ~2 s; 0.005 → en ~20 s; valores más bajos dejan "memoria" más larga.</small>
                     </div>
 
                     <div class="form-group">
                         <label>Umbral (sin uso actual, para futuro)</label>
-                        <input type="number" step="0.01" name="UMBRAL_PRESENCIA" value="{{ config.UMBRAL_PRESENCIA }}" required>
+                        <input type="number" step="0.01" min="0" name="UMBRAL_PRESENCIA" value="{{ config.UMBRAL_PRESENCIA }}" required>
                     </div>
 
                     <button type="submit" style="margin-top:1rem;">Guardar Cambios</button>
                     <p style="font-size:0.875rem; color:var(--text-secondary); text-align:center; margin-top:1rem;">
-                        (Recordá reiniciar los servicios para aplicar)
+                        La velocidad del radar se aplica sola (en ~1 s). El resto puede requerir reiniciar los servicios.
                     </p>
                 </form>
                 <div class="card">

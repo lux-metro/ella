@@ -45,7 +45,15 @@ intensidad_suavizada = 0.0
 def procesar_intensidad():
     """Calcula la intensidad suavizada gradualmente y escribe los archivos en /tmp."""
     global intensidad_suavizada
+    contador = 0
     while True:
+        # Releer config cada ~1s para que un cambio de velocidades en el panel
+        # se aplique en vivo, sin reiniciar el servicio (el panel ya no
+        # necesita tocar nada tras guardar).
+        if contador % 10 == 0:
+            leer_configuracion()
+        contador += 1
+
         # Calcular nueva intensidad
         if estado_presencia_actual == 1:
             intensidad_suavizada += VELOCIDAD_SUBIDA
